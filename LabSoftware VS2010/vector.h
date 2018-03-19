@@ -24,6 +24,8 @@ int triangle_inside(vec p, vec a, vec b, vec c);
 
 int line_sect(vec x0, vec x1, vec y0, vec y1, vec res);
 
+int line_sect_ignore_edge(vec x0, vec x1, vec y0, vec y1);
+
 double inner_angle(vec a, vec b,vec c);
 
 poly poly_new();

@@ -80,6 +80,21 @@ int line_sect(vec x0, vec x1, vec y0, vec y1, vec res) {
 	return 1;
 }
 
+int line_sect_ignore_edge(vec start1, vec end1, vec start2, vec end2) {
+	double denom = ((end1->x - start1->x)*(end2->y - start2->y)) - ((end1->y - start1->y)*(end2->x - start2->y));
+	if (denom == 0) return 0;
+	double numer = ((start1->y - start2->y)*(end2->x - start2->x)) - ((start1->x-start2->x)*(end1->y-start1->y));
+
+	double r = numer / denom;
+
+	double numer2 = ((start1->y - start2->y)*(end2->x - start2->x)) - ((start1->x - start2->x)*(end1->y - start1->y));
+
+	double s = numer2 / denom;
+
+	if ((r <= 0 || r >= 1) || (s <= 0 || s >= 1)) return false;
+	return true;
+}
+
 // a = vertex, b & c = sides to get angle for w.r.t a
 double inner_angle(vec b, vec a,vec c) {
 	double dx21, dx31, dy21, dy31, m12, m13, theta;
