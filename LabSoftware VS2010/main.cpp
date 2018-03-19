@@ -313,41 +313,9 @@ void fillFlatBottomTriangle(vec v1, vec v2, vec v3,unsigned char r, unsigned cha
 	curx2 += slp2;
 }
 
-void fillTriangle(vec v1, vec v2, vec v3, unsigned char r, unsigned char g, unsigned char b, BYTE*screen) {
-	int sorted = 0;
-	
-	int sort[3];
-	
-	sort[0] = 1;
-	sort[1] = 2;
-	sort[2] = 3;
+void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char r, unsigned char g, unsigned char b, BYTE*screen) {
 
-	if (v1->y < v3->y)SWAP(sort[0], sort[2], int);
-	if (v1->y < v2->y)SWAP(sort[0], sort[1], int);
-	if (v2->y < v3->y)SWAP(sort[1], sort[2], int);
-
-	printf("%f,%f,%f\n",v1->y,v2->y,v3->y);
-	printf("%i,%i,%i\n",sort[0],sort[1],sort[2]);
-
-	if (v2->y == v3->y) {
-		fillFlatBottomTriangle(v1, v2, v3, r, g, b, screen);
-	}
-	if (v1->y == v2->y) {
-		fillFlatTopTriangle(v1, v2, v3, r, g, b, screen);
-	}
-	else {
-		vec_t vector4;
-		vec v4 = &vector4;
-		v4->x = (int)(v1->x + ((float)(v2->y - v1->y) / (float)(v3->y - v1->y))*(v3->x - v1->x));
-		v4->y = v2->y;
-		fillFlatBottomTriangle(v1,v2,v4,r,g,b,screen);
-		fillFlatTopTriangle(v2,v4,v3,r,g,b,screen);
-	}
-}
-
-void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char r, unsigned char g, unsigned char b,BYTE*screen){
-	
-	int lEdge[FRAME_HIGH],rEdge[FRAME_HIGH];
+	int lEdge[FRAME_HIGH], rEdge[FRAME_HIGH];
 
 	int xv[3], yv[3];
 
@@ -363,7 +331,7 @@ void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char 
 	yv[0] = y1;
 	yv[1] = y2;
 	yv[2] = y3;
-	
+
 	// Sorts yv by height, keeping xv parallel
 	if (yv[0] < yv[2]) {
 		SWAP(yv[0], yv[2], int);
@@ -378,19 +346,19 @@ void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char 
 		SWAP(xv[0], xv[1], int);
 	}
 
-	double * mL, * mR;
-	int hL, hR,sR,sL;
+	double * mL, *mR;
+	int hL, hR, sR, sL;
 
-	dv[0] = (double)(xv[2]-xv[0]) / (double)(yv[2] - yv[0]);
-	dv[1] = (double)(xv[1]-xv[0]) / (double)(yv[1] - yv[0]);
+	dv[0] = (double)(xv[2] - xv[0]) / (double)(yv[2] - yv[0]);
+	dv[1] = (double)(xv[1] - xv[0]) / (double)(yv[1] - yv[0]);
 
 	double xL = xv[0];
 	double xR = xv[0];
 
 	// point 1 is on the left side
-	if (dv[0] < dv[1]){
+	if (dv[0] < dv[1]) {
 		mL = dv;
-		mR = dv+1;
+		mR = dv + 1;
 
 		sR = 2;
 		sL = 1;
@@ -398,9 +366,10 @@ void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char 
 		hL = yv[0] - yv[2];
 		hR = yv[0] - yv[1];
 
-	// point 2 is on the left side
-	}else{
-		mL = dv+1;
+		// point 2 is on the left side
+	}
+	else {
+		mL = dv + 1;
 		mR = dv;
 
 		sR = 1;
@@ -412,25 +381,63 @@ void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char 
 
 	int high = yv[0] - yv[2]; // highest y value - lowest y value
 
-	if(yv[0]!=yv[1]){
-		for (int y = 0; y < high; y++) {
-			lEdge[y] = xL;
-			rEdge[y] = xR;
-			if (y == hL)*mL = (double)(xv[sL] - xv[sR]) / (double)(yv[sL] - yv[sR]);
-			if (y == hR)*mR = (double)(xv[sR] - xv[sL]) / (double)(yv[sR] - yv[sL]);
-			xL -= *mL;
-			xR -= *mR;
-			drawLine(lEdge[y], yv[0] - y, rEdge[y], yv[0] - y, r, g, b, screen);
-		}
-	} else {
-		for (int y = 0; y < high; y++) {
 
-		}
+
+	for (int y = 0; y < high; y++) {
+		lEdge[y] = xL;
+		rEdge[y] = xR;
+		if (y == hL)*mL = (double)(xv[sL] - xv[sR]) / (double)(yv[sL] - yv[sR]);
+		if (y == hR)*mR = (double)(xv[sR] - xv[sL]) / (double)(yv[sR] - yv[sL]);
+		xL -= *mL;
+		xR -= *mR;
+		drawLine(lEdge[y], yv[0] - y, rEdge[y], yv[0] - y, r, g, b, screen);
 	}
 	//drawLine(x1, y1, x2, y2, 255, 0, 0, screen);
 	//drawLine(x2, y2, x3, y3, 0, 255, 0, screen);
 	//drawLine(x3, y3, x1, y1, 0, 0, 255, screen);
+}
 
+void fillTriangle(vec v1, vec v2, vec v3, unsigned char r, unsigned char g, unsigned char b, BYTE*screen) {
+	int sorted = 0;
+	
+	int sort[3];
+	
+	vec vl[3];
+	vl[0] = v1;
+	vl[1] = v2;
+	vl[2] = v3;
+
+	sort[0] = 1;
+	sort[1] = 2;
+	sort[2] = 3;
+
+	if (v1->y < v3->y) {
+		SWAP(sort[0], sort[2], int);
+		SWAP(vl[0], vl[2],vec);
+	}
+	if (v1->y < v2->y) {
+		SWAP(sort[0], sort[1], int);
+		SWAP(vl[0], vl[1],vec);
+	}
+	if (v2->y < v3->y) {
+		SWAP(sort[1], sort[2], int);
+		SWAP(vl[1], vl[2],vec);
+	}
+	//printf("%f,%f,%f\n",v1->y,v2->y,v3->y);
+	//printf("%i,%i,%i\n",sort[0],sort[1],sort[2]);
+
+	if (v1->y == v2->y) {
+		//printf("Flat Bottom\n");
+		fillFlatBottomTriangle(vl[0],vl[1],vl[2], r, g, b, screen);
+	}
+	else if (v2->y == v3->y) {
+		//printf("Flat Top\n");
+		fillFlatTopTriangle(vl[0], vl[1], vl[2], r, g, b, screen);
+	}
+	else {
+		//printf("Other Triangle\n");
+		drawTriangle(vl[0]->x,vl[0]->y,vl[1]->x,vl[1]->y,vl[2]->x,vl[2]->y,r,g,b,screen);
+	}
 }
 
 void drawTriangleShaded(int x1, int y1, int x2, int y2, int x3, int y3, unsigned char r1, unsigned char g1, unsigned char b1, unsigned char r2, unsigned char g2, unsigned char b2, BYTE*screen) {
@@ -563,100 +570,69 @@ int inside(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) {
 // DrawPoly(): Void
 // Accepts an array 'points' of size 'n' and draws the resulting polygon using triangle decomposition.
 void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*screen){
-
-
-
 	printf("%i\n",p->len);
 
-	if (p->len <= 3) {
-		drawTriangle(p->v[0].x,p->v[0].y,p->v[1].x,p->v[1].y,p->v[2].x,p->v[2].y,r,g,b,screen);
+	if (p->len == 3) {
+		fillTriangle(&p->v[0], &p->v[1], &p->v[2], r, g, b, screen);
 		return;
 	}
 
 	// l = left point, c = centre point, r = right point, off = offset
 	int lp = 0, cp = 1, rp = 2, off = 0;
-
-	for (int i = 0; i < p->len; i++) {
-		if (i != lp && i != cp && i != rp) {
-			if (triangle_inside(&p->v[i], &p->v[lp+off], &p->v[cp + off], &p->v[rp + off])) {
-				continue;
-			}
-			else {
-				//drawTriangle(p->v[lp + off].x, p->v[lp + off].y, p->v[cp + off].x, p->v[cp + off].y, p->v[rp + off].x, p->v[rp + off].y, r, g, b, screen);
-				fillTriangle(&p->v[lp + off],&p->v[cp + off],&p->v[rp + off],r,g,b,screen);
-				poly_remove(p,cp+off);
-				break;
+	for (int h = 0; h < p->len;h++) {
+		int valid = 0;
+		for (int i = 0; i < p->len; i++) {
+			printf("%i,%i,%i,%i\n", lp+off, cp+off, rp+off, i);
+			if (i != lp && i != cp && i != rp) {
+				//printf("in if at %i\n", i);
+				if (triangle_inside(&p->v[i], &p->v[lp + off], &p->v[cp + off], &p->v[rp + off])) {
+					printf("Point inside triangle\n");
+					continue;
+				}
+				else {
+					fillTriangle(&p->v[lp + off], &p->v[cp + off], &p->v[rp + off], r, g, b, screen);
+					//drawLine(p->v[lp + off].x, p->v[lp + off].y, p->v[cp + off].x, p->v[cp + off].y, 255, 0, 0, screen);
+					//drawLine(p->v[cp + off].x, p->v[cp + off].y, p->v[rp + off].x, p->v[rp + off].y, 0, 255, 0, screen);
+					//drawLine(p->v[lp + off].x, p->v[lp + off].y, p->v[rp + off].x, p->v[rp + off].y, 0, 0, 255, screen);
+					poly_remove(p, cp + off);
+					valid = 1;
+					break;
+				}
 			}
 		}
+		off++;
+		if (lp > p->len)lp -= p->len;
+		if (cp > p->len)cp -= p->len;
+		if (rp > p->len)rp -= p->len;
+		if (valid) break;
 	}
 	DrawPoly(p, r, g, b, screen);
 }
 
-void TestDrawPoly(BYTE*screen){
-
-	vec_t pt[7];
-
-	int n = 7;
-
-	pt[0].x = FRAME_WIDE * .5;
-	pt[0].y = FRAME_HIGH * 0;
-
-	pt[1].x = FRAME_WIDE * .9;
-	pt[1].y = FRAME_HIGH * .2;
-
-	pt[2].x = FRAME_WIDE * 1 - 1;
-	pt[2].y = FRAME_HIGH * .6;
-
-	pt[3].x = FRAME_WIDE * .75;
-	pt[3].y = FRAME_HIGH * 1 - 1;
-
-	pt[4].x = FRAME_WIDE * .25;
-	pt[4].y = FRAME_HIGH * 1 - 1;
-
-	pt[5].x = FRAME_WIDE * 0;
-	pt[5].y = FRAME_HIGH * .6;
-
-	pt[6].x = FRAME_WIDE * .1;
-	pt[6].y = FRAME_HIGH * .2;
+void TestDrawPoly(BYTE*screen) {
+	
+	int sides = 5;
+	
+	vec_t v[5];
 
 	poly p = poly_new();
 
-	for (int i = 0; i < 7; i++) {
-		poly_append(p,&pt[i]);
+	for (int i = 0;i < 5;i++) {
+		poly_append(p,&v[i]);
 	}
 
-	DrawPoly(p,255, 255, 255, screen);
-
-	// Draw Polygon using lines for testing
-	for (int i = 0; i<7; i++) {
-		if (i == 7 - 1) {
-			drawLine(pt[i].x,pt[i].y,pt[0].x,pt[0].y, 255, 0, 0, screen);
-			printf("%i: Drawing (%f,%f) to (%f,%f). \n", i, pt[i].x, pt[i].y, pt[0].x, pt[0].y);
-		}
-		else {
-			drawLine(pt[i].x, pt[i].y, pt[i+1].x, pt[i+1].y, 255, 0, 0, screen);
-			printf("%i: Drawing (%f,%f) to (%f,%f). \n", i, pt[i].x, pt[i].y, pt[i + 1].x, pt[i + 1].y);
-		}
+	//DrawPoly(p,255, 255, 255, screen);
+	
+	for (int i = 0;i < p->len;i++) {
+		if (i == p->len-1) drawLine(p->v[i].x, p->v[i].y, p->v[0].x, p->v[0].y, 255, 255, 0, screen);
+		else drawLine(p->v[i].x, p->v[i].y, p->v[i + 1].x, p->v[i + 1].y, 255, 255, 0, screen);
 	}
+	poly_free(p);
 }
 
 void BuildFrame(BYTE *pFrame, int view)
 {
 	BYTE*	screen = (BYTE*)pFrame;		// use copy of screen pointer for safety
-	//testSetPixel(screen);
-	//testDrawLine(screen);
-	//testDrawLineShaded(screen);
-	//drawTriangle(200,200,100,100,200,100,255,255,255,screen);
-	//drawTriangle(100,100,150,150,125,200,255,255,255,screen);
-	//drawTriangle(50,20,80,100,100,25,255,255,255,screen);
-	//testDrawTriangle(screen);
-	//testDrawTriangleShaded(screen);
 	TestDrawPoly(screen);
-	//drawTriangle(100, 200, 200, 200, 150, 50, 255, 255, 255, screen);
-	
-	//vec_t v1, v2, v3;
-	//v1 = {100.0f,200.0f};
-	//v2 = {200.0f,200.0f};
-	//v3 = {150.0f,50.0f};
-	//fillTriangle(&v1,&v2,&v3, 255, 255, 255, screen);
+	vec_t v1, v2, v3;
 }
