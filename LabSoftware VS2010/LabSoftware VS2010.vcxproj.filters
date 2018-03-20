@@ -20,12 +20,18 @@
     <ClCompile Include="liangbarsky.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sutherlandhodgeman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="liangbarsky.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sutherlandhodgeman.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

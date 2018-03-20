@@ -6,6 +6,7 @@
 
 #include "vector.h"
 #include "liangbarsky.h"
+#include "sutherlandhodgeman.h"
 
 #define M_PI acos(-1)
 
@@ -63,6 +64,15 @@ POINT2D	xypos = {0,0};
 int		stereo = 0;
 int		eyes = 10;
 
+rect_t c = { 0,0,FRAME_HIGH,FRAME_WIDE };
+
+poly bound = poly_new();
+
+vec_t bound_p1 = { 0.0f,0.0f };
+vec_t bound_p2 = { 0.0f,FRAME_WIDE };
+vec_t bound_p3 = { FRAME_HIGH,FRAME_WIDE };
+vec_t bound_p4 = { FRAME_HIGH,0.0f};
+
 //===== Forward Declarations ========
 void ClearScreen();
 void DrawFrame();
@@ -82,12 +92,19 @@ void OnKeypress(unsigned char key, int x, int y);
 int main(int argc, char** argv)
 {
 
+	// Assign Boundary Polygon
+	poly_append(bound, &bound_p1);
+	poly_append(bound, &bound_p2);
+	poly_append(bound, &bound_p3);
+	poly_append(bound, &bound_p4);
+
 	//-- setup GLUT --
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);	//GLUT_3_2_CORE_PROFILE |
 	glutInitWindowSize(FRAME_WIDE, FRAME_HIGH);
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
+
 /*
 #ifdef WIN32
 	//- eliminate flashing --
@@ -236,8 +253,6 @@ void setPixel(unsigned int x,unsigned int y, unsigned char r, unsigned char g, u
 void drawLine(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char r, unsigned char g, unsigned char b,BYTE* screen) {
 	
 	int nx1=x1, ny1=y1, nx2=x2, ny2=y2;
-
-	rect_t c = {0,0,FRAME_HIGH,FRAME_WIDE};
 	
 	if(clip_line(&c, &nx1, &ny1, &nx2, &ny2)){
 		int dx = nx2 - nx1;
@@ -828,7 +843,21 @@ void BuildFrame(BYTE *pFrame, int view)
 	poly_append(p,&v4);
 	poly_append(p,&v2);
 
-	IdentifyConcave(p,255,0,0,screen);
+	for(int i=0; i<p->len;i++){
+		printf("(%f,%f),",p->v[i].x,p->v[i].y);
+	}
+
+	printf("\n");
+
+	poly p_clip = poly_clip(p, bound);
+
+	for (int i = 0; i<p_clip->len;i++) {
+		printf("(%f,%f),", p_clip->v[i].x, p_clip->v[i].y);
+	}
+
+	printf("\n");
+
+	IdentifyConcave(p_clip,255,0,0,screen);
 
 	//fillTriangle(&v1, &v2, &v4,255,255,255,screen);
 	//fillTriangle(&v2, &v3, &v4, 255, 0, 0, screen);

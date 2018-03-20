@@ -1,7 +1,7 @@
 #pragma once
 
 typedef struct {
-	double x1, y1, x2, y2;
+	vec_t x1, y1, x2, y2;
 }rect_t,*rect;
 
 int clip_line(rect c, int*x1, int*y1, int*x2, int*y2);

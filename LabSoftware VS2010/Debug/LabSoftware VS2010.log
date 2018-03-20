@@ -1,5 +1,3 @@
 ﻿  main.cpp
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(732): warning C4474: 'printf' : too many arguments passed for format string
-  h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(732): note: placeholders and their parameters expect 1 variadic arguments, but 2 were provided
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(692): warning C4101: 'res': unreferenced local variable
-  LabSoftware VS2010.vcxproj -> H:\My Documents\3802ICT\3801ICT-GE-master\3801ICT-GE-master\Debug\LabSoftware VS2010.exe
+c:\users\s2970548\desktop\3802ict\labsoftware vs2010\main.cpp(707): warning C4101: 'res' : unreferenced local variable
+  LabSoftware VS2010.vcxproj -> C:\Users\s2970548\Desktop\3802ict\Debug\LabSoftware VS2010.exe

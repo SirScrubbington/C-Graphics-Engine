@@ -112,6 +112,14 @@ poly poly_new()
 	return (poly)calloc(1, sizeof(poly_t));
 }
 
+poly poly_copy(poly p1) {
+	poly p2 = poly_new();
+	for (int i = 0; i < p1->len;i++) {
+		poly_append(p2,&p1->v[i]);
+	}
+	return p2;
+}
+
 void poly_free(poly p)
 {
 	free(p->v);
@@ -135,52 +143,4 @@ void poly_remove(poly p, int v) {
 	}
 	p->len--;
 
-}
-
-int poly_winding(poly p)
-{
-	return left_of(p->v, p->v + 1, p->v + 2);
-}
-
-void poly_edge_clip(poly sub, vec x0, vec x1, int left, poly res)
-{
-	int i, side0, side1;
-	vec_t tmp;
-	vec v0 = sub->v + sub->len - 1, v1;
-	res->len = 0;
-
-	side0 = left_of(x0, x1, v0);
-	if (side0 != -left) poly_append(res, v0);
-
-	for (i = 0; i < sub->len; i++) {
-		v1 = sub->v + i;
-		side1 = left_of(x0, x1, v1);
-		if (side0 + side1 == 0 && side0)
-			if (line_sect(x0, x1, v0, v1, &tmp))
-				poly_append(res, &tmp);
-		if (i == sub->len - 1) break;
-		if (side1 != -left) poly_append(res, v1);
-		v0 = v1;
-		side0 = side1;
-	}
-}
-
-poly poly_clip(poly sub, poly clip)
-{
-	int i;
-	poly p1 = poly_new(), p2 = poly_new(), tmp;
-
-	int dir = poly_winding(clip);
-	poly_edge_clip(sub, clip->v + clip->len - 1, clip->v, dir, p2);
-	for (i = 0; i < clip->len - 1; i++) {
-		tmp = p2; p2 = p1; p1 = tmp;
-		if (p1->len == 0) {
-			p2->len = 0;
-			break;
-		}
-		poly_edge_clip(p1, clip->v + i, clip->v + i + 1, dir, p2);
-	}
-
-	poly_free(p1);
-	return p2;
 }
