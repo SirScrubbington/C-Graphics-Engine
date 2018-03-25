@@ -1,5 +1,8 @@
 ﻿  main.cpp
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(734): warning C4101: 'res': unreferenced local variable
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(819): warning C4101: 'j': unreferenced local variable
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(819): warning C4101: 'i': unreferenced local variable
+h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(740): warning C4101: 'res': unreferenced local variable
+h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(847): warning C4101: 'v1': unreferenced local variable
+h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(876): warning C4101: 'j': unreferenced local variable
+h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(876): warning C4101: 'i': unreferenced local variable
+h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(887): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\stdio.h(207): note: see declaration of 'fopen'
   LabSoftware VS2010.vcxproj -> H:\My Documents\3802ICT\3801ICT-GE-master\3801ICT-GE-master\Debug\LabSoftware VS2010.exe

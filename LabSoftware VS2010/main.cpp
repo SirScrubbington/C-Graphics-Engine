@@ -15,6 +15,8 @@
 #ifdef _WIN32
 	#include "libs/glut.h"
 	#include <windows.h>
+	#include <direct.h>
+	#define GetCurrentDir _getcwd
 	#pragma comment(lib, "winmm.lib")			//- not required but have it in anyway
 	#pragma comment(lib, "libs/glut32.lib")
 	
@@ -24,6 +26,7 @@
 #elif __APPLE__
 	#include <GLUT/glut.h>
 	#include <unistd.h>
+	#define GetCurrentDir getcwd
 
 	void sleep(unsigned milliseconds)
 	{
@@ -32,6 +35,7 @@
 #elif __unix__		// all unices including  __linux__
 	#include <GL/glut.h>
 	#include <unistd.h>
+	#define GetCurrentDir getcwd
 
 	void sleep(unsigned milliseconds)
 	{
@@ -44,6 +48,8 @@
 #define FRAME_WIDE	1000
 #define FRAME_HIGH	600
 #define COLOUR_MAX 255
+
+#define DRAW_DISTANCE_CONSTANT 500
 
 #define ROUND(x) ((int)(x+0.5))
 #define ABS(x) ((x)<0 ? -(x) : (x))
@@ -67,7 +73,7 @@ typedef struct POINT2D {int x, y;}p2d_t,*P2D;
 
 // Vertex Join Set Stuff
 
-typedef struct _Point_3D { int x, y, z; }Point_3D, Points_3D[MaxNumPts];
+typedef struct _Point_3D { int x, y, z; unsigned char r, g, b; }Point_3D, Points_3D[MaxNumPts];
 
 typedef struct _Polygon { int Vertices[NumSidesPoly]; } Polygon_t, Polygons[MaxNumPolys];
 
@@ -815,7 +821,58 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 	
 }
 
-void DrawVSJ(Object o,BYTE*screen) {
+vec xyztoij(int x, int y, int z,vec res) {
+	res->x = (DRAW_DISTANCE_CONSTANT*x / (z + DRAW_DISTANCE_CONSTANT));
+	res->y = (DRAW_DISTANCE_CONSTANT*y / (z + DRAW_DISTANCE_CONSTANT));
+	return res;
+}
+
+void loadVJS(FILE * f, Object o) {
+	int verts, polys;
+	fscanf_s(f, "%i", &verts);
+	fscanf_s(f, "%i", &polys);
+
+	for (int i = 0; i < verts; i++) {
+		int x, y, z, r, g, b;
+		fscanf_s(f, "%i", &x);
+		fscanf_s(f, "%i", &y);
+		fscanf_s(f, "%i", &z);
+		fscanf_s(f, "%i", &r);
+		fscanf_s(f, "%i", &g);
+		fscanf_s(f, "%i", &b);
+		o.ObjectPoints[i] = {x,y,z,(unsigned char)r,(unsigned char)g,(unsigned char)b};
+	}
+
+	for (int i = 0; i < polys; i++) {
+		int pvert, v1;
+		fscanf_s(f, "%i", &pvert);
+		for (int j = 0; j < pvert; j++) {
+			fscanf_s(f, "%i", &o.ObjectPolys[i].Vertices[j]);
+		}	
+	}
+}
+
+void DrawVJS(Object o,BYTE*screen) {
+
+	vec_t ij;
+
+	for (int i = 0; i < o.NumPolysObj; i++) {
+		
+		Polygon_t * obj = &o.ObjectPolys[i];
+		
+		poly p = poly_new();
+
+		for (int j = 0; j < NumSidesPoly; j++) {
+			xyztoij(o.ObjectPoints[obj->Vertices[j]].x, o.ObjectPoints[obj->Vertices[j]].y, o.ObjectPoints[obj->Vertices[j]].z, &ij);
+			poly_append(p,&ij);
+		}
+		
+		IdentifyConcave(p, 255, 255, 255, screen);
+
+		poly_free(p);
+	}
+
+
 	int i, j;
 
 
@@ -824,5 +881,17 @@ void DrawVSJ(Object o,BYTE*screen) {
 void BuildFrame(BYTE *pFrame, int view)
 {
 	BYTE*	screen = (BYTE*)pFrame;		// use copy of screen pointer for safety
-
+	
+	//char fname[FILENAME_MAX] = "sample1.vjs";
+	
+	FILE * f = fopen("sample1.vjs","r");
+	
+	Object o;
+	if (f) {
+		loadVJS(f, o);
+		DrawVJS(o, screen);
+	}
+	else {
+		printf("Cannot open '%s'!\n", "/sample1.vjs");
+	}
 }
