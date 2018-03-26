@@ -136,6 +136,23 @@ void poly_append(poly p, vec v)
 	p->v[p->len++] = *v;
 }
 
+void poly_remove_duplicates(poly p) {
+	int removed = 1;
+	if(removed){
+		removed = 0;
+		for (int i = 0; i < p->len; i++) {
+			for (int j = i+1; j < p->len; j++) {
+				if (p->v[i].x == p->v[j].x && p->v[i].y == p->v[j].y) {
+					removed = 1;
+					poly_remove(p, i);
+					break;
+				}
+			}
+			if (removed)break;
+		}
+	}
+}
+
 void poly_remove(poly p, int v) {
 	for (int i = v; i < p->len-1; i++) {
 		vec_t temp;

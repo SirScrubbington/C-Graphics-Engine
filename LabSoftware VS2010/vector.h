@@ -34,6 +34,8 @@ poly poly_copy(poly p1);
 
 void poly_free(poly p);
 
+void poly_remove_duplicates(poly p);
+
 void poly_append(poly p, vec v);
 
 void poly_remove(poly p, int v);
