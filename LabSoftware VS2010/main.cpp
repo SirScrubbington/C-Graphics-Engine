@@ -3,6 +3,7 @@
 #include <string.h>			//- for memset()
 #include <math.h>			//- for round()
 #include <cmath>
+
 #include "vector.h"
 #include "queue.h"
 
@@ -80,7 +81,7 @@ typedef struct _Polygon { int Vertices[NumSidesPoly]; } Polygon_t, Polygons[MaxN
 
 typedef struct _ObjectAttribs { BYTE Colour; Point_3D Center, Scale; } ObjectAttribs, ObjAttrArray[MaxNumObjs];
 
-typedef struct _Object { ObjectAttribs ObjProps; int NumPtsObj, NumPolysObj; Polygons ObjectPolys; Points_3D ObjectPoints; } Object;
+typedef struct _Object { ObjectAttribs ObjProps; int NumPtsObj, NumPolysObj; Polygons ObjectPolys; Points_3D ObjectPoints; } Object, *obj;
 
 
 //====== Global Variables ==========
@@ -270,18 +271,18 @@ void	PlaySoundEffect(char * filename)
 ////////////////////////////////////////////////////////
 
 // lazy collision detection
-void setPixel(int x,int y, unsigned char r, unsigned char g, unsigned char b, BYTE* screen){
+void setPixel(int x,int y, unsigned char r, unsigned char g, unsigned char b, BYTE* screen, int view){
 	int channels = 3;
 	int colour = 0;
 	if (x > 0 && x < FRAME_WIDE && y > 0 && y < FRAME_HIGH) {
-		screen[channels*((x + (y * FRAME_WIDE))) + 0] = r;
-		screen[channels*((x + (y * FRAME_WIDE))) + 1] = g;
-		screen[channels*((x + (y * FRAME_WIDE))) + 2] = b;
+		screen[channels*((x + view + (y * FRAME_WIDE))) + 0] = r;
+		screen[channels*((x + view + (y * FRAME_WIDE))) + 1] = g;
+		screen[channels*((x + view + (y * FRAME_WIDE))) + 2] = b;
 	}
 	
 }
 
-void drawLine(double x1, double y1, double x2, double y2, unsigned char r, unsigned char g, unsigned char b,BYTE* screen) {
+void drawLine(double x1, double y1, double x2, double y2, unsigned char r, unsigned char g, unsigned char b,BYTE* screen, int view) {
 	
 	int nx1=x1, ny1=y1, nx2=x2, ny2=y2;
 	
@@ -299,8 +300,8 @@ void drawLine(double x1, double y1, double x2, double y2, unsigned char r, unsig
 		double x = x1;
 		double y = y1;
 
-		setPixel(ROUND(x), ROUND(y),r,g,b,screen);
-		for (int i = 0;i < steps;i++, x += x_inc, y += y_inc) setPixel(ROUND((int)x),ROUND((int)y), r, g, b,screen);
+		setPixel(ROUND(x), ROUND(y),r,g,b,screen, view);
+		for (int i = 0;i < steps;i++, x += x_inc, y += y_inc) setPixel(ROUND((int)x),ROUND((int)y), r, g, b,screen,view);
 	//}
 }
 
@@ -322,7 +323,7 @@ int inside(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) {
 		&& sameSide(x1, y1, x4, y4, x2, y2, x3, y3);
 }
 
-void fillTriangle(vec A, vec B, vec C, unsigned char r, unsigned char g, unsigned char b, BYTE*screen) {
+void fillTriangle(vec A, vec B, vec C, unsigned char r, unsigned char g, unsigned char b, BYTE*screen, int view) {
 	// sort triangle
 
 	double dx1, dx2, dx3;
@@ -335,26 +336,26 @@ void fillTriangle(vec A, vec B, vec C, unsigned char r, unsigned char g, unsigne
 
 	if (dx1 > dx2) {
 		for (; S.y <= B->y; S.y++, E.y++, S.x += dx2, E.x += dx1) {
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen);
+			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
 		}
 		E.x = B->x;
 		E.y = B->y;
 		for (; S.y <= C->y; S.y++, E.y++, S.x += dx2, E.x += dx3) {
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen);
+			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
 		}
 	}
 	else {
 		for (; S.y <= B->y; S.y++, E.y++, S.x += dx1, E.x += dx2)
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen);
+			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
 		S.x = B->x;
 		S.y = B->y;
 		for (; S.y <= C->y; S.y++, E.y++, S.x += dx3, E.x += dx2)
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen);
+			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
 	}
 	
 }
 
-void fill_triangle_sort(vec A, vec B, vec C, unsigned char rc, unsigned char gc, unsigned char bc, BYTE*screen) {
+void fill_triangle_sort(vec A, vec B, vec C, unsigned char rc, unsigned char gc, unsigned char bc, BYTE*screen, int view) {
 	vec a = A, b = B, c = C;
 	if (a->y > c->y) {
 		a = C;
@@ -371,10 +372,10 @@ void fill_triangle_sort(vec A, vec B, vec C, unsigned char rc, unsigned char gc,
 
 	printf("%f,%f,%f\n",a->y,b->y,c->y);
 
-	fillTriangle(a,b,c, rc, gc, bc, screen);
+	fillTriangle(a,b,c, rc, gc, bc, screen, view);
 }
 
-void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen) {
+void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen, int view) {
 	// sort triangle
 
 	double dx1, dx2, dx3;
@@ -418,7 +419,7 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 			vec_t P = {S.x,S.y};
 			colour_t cP = {cS.r,cS.g,cS.b};
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen);
+				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
 			S.x += dx2; cS.r += dr2; cS.g += dg2; cS.b += db2;
@@ -439,7 +440,7 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen);
+				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
 			S.x += dx2; cS.r += dr2; cS.g += dg2; cS.b += db2;
@@ -457,7 +458,7 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen);
+				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
 			S.x += dx1; cS.r += dr1; cS.g += dg1; cS.b += db1;
@@ -478,7 +479,7 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen);
+				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
 			S.x += dx3; cS.r += dr3; cS.g += dg3; cS.b += db3;
@@ -489,7 +490,7 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 
 }
 
-void FillTriangleSortGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen) {
+void FillTriangleSortGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen, int view) {
 	vec a = A, b = B, c = C;
 	colour ca=cA, cb=cB, cc=cC;
 	
@@ -514,13 +515,13 @@ void FillTriangleSortGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC
 
 	printf("%f,%f,%f\n", a->y, b->y, c->y);
 
-	fillTriangleGourad(a, b, c, ca, cb, cc, screen);
+	fillTriangleGourad(a, b, c, ca, cb, cc, screen, view);
 }
 
 
 // DrawPoly(): Void
 // Accepts an array 'points' of size 'n' and draws the resulting polygon using triangle decomposition.
-void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*screen) {
+void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*screen, int view) {
 	//printf("%i\n", p->len);
 
 	while (p->len > 3) {
@@ -536,7 +537,7 @@ void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*sc
 						continue;
 					}
 					else {
-						fill_triangle_sort(&p->v[lp + off], &p->v[cp + off], &p->v[rp + off], r, g, b, screen);
+						fill_triangle_sort(&p->v[lp + off], &p->v[cp + off], &p->v[rp + off], r, g, b, screen, view);
 						poly_remove(p, cp + off);
 						valid = 1;
 						break;
@@ -550,11 +551,11 @@ void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*sc
 			if (valid) break;
 		}
 	}
-	fill_triangle_sort(&p->v[0], &p->v[1], &p->v[2], r, g, b, screen);
+	fill_triangle_sort(&p->v[0], &p->v[1], &p->v[2], r, g, b, screen, view);
 	return;
 }
 
-void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char b, byte*screen) {
+void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char b, byte*screen, int view) {
 	
 	poly p_arr[1024];
 	Queue in,out;
@@ -616,7 +617,7 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 		//printf("pos: %i neg: %i len: %i\n", pos, neg, p->len);
 		if (pos == p->len || neg == p->len) {
 			//printf("Drawing Polygon!\n");
-			DrawPoly(p, r, g, b, screen);
+			DrawPoly(p, r, g, b, screen, view);
 		}
 
 		else {
@@ -657,8 +658,8 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 						//printf("Checking for intersection between (%f,%f),(%f,%f) and (%f,%f),(%f,%f)\n", v1->x, v1->y, v2->x, v2->y, p->v[k].x, p->v[k].y, p->v[0].x, p->v[0].y);
 						if (line_sect_ignore_edge(v1, v2, &p->v[k], &p->v[0])) {
 							valid = 0;
-							drawLine(v1->x, v1->y, v2->x, v2->y, 255, 255, 0, screen);
-							drawLine(p->v[k].x, p->v[k].y, p->v[0].x, p->v[0].y, 0, 255, 255, screen);
+							//drawLine(v1->x, v1->y, v2->x, v2->y, 255, 255, 0, screen);
+							//drawLine(p->v[k].x, p->v[k].y, p->v[0].x, p->v[0].y, 0, 255, 255, screen);
 							break;
 						}
 					}
@@ -667,8 +668,8 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 						if (line_sect_ignore_edge(v1, v2, &p->v[k], &p->v[k + 1])) {
 							valid = 0;
 							//printf("Intersect found!\n");
-							drawLine(v1->x, v1->y, v2->x, v2->y, 255, 255, 0, screen);
-							drawLine(p->v[k].x, p->v[k].y, p->v[k + 1].x, p->v[k + 1].y, 0, 255, 255, screen);
+							//drawLine(v1->x, v1->y, v2->x, v2->y, 255, 255, 0, screen);
+							//drawLine(p->v[k].x, p->v[k].y, p->v[k + 1].x, p->v[k + 1].y, 0, 255, 255, screen);
 							break;
 						}
 						//printf("No intersect at %i\n", k);
@@ -723,74 +724,144 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 }
 
 vec xyztoij(int x, int y, int z,vec res) {
-	res->x = (DRAW_DISTANCE_CONSTANT*x / (z + DRAW_DISTANCE_CONSTANT));
-	res->y = (DRAW_DISTANCE_CONSTANT*y / (z + DRAW_DISTANCE_CONSTANT));
+	res->x = (DRAW_DISTANCE_CONSTANT*(x-FRAME_WIDE/2) / (z + DRAW_DISTANCE_CONSTANT));
+	res->y = (DRAW_DISTANCE_CONSTANT*(y-FRAME_HIGH/2) / (z + DRAW_DISTANCE_CONSTANT));
+	res->x += (FRAME_WIDE / 2);
+	res->y += (FRAME_HIGH / 2);
 	return res;
 }
 
-void loadVJS(FILE * f, Object o) {
-	char *buffer=0, *buf=0;
-	char delimit[] = "\n\0 ";
-
-	long length;
-
-	if (f)
-	{
-		fseek(f, 0, SEEK_END);
-		length = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		buffer = (char*)malloc(length);
-		if (buffer)
-		{
-			fread(buffer, 1, length, f);
-		}
-		fclose(f);
+void printObject(obj o) {
+	printf("%d,%d\n", o->NumPtsObj, o->NumPolysObj);
+	for (int i = 0; i < o->NumPtsObj;i++) {
+		printf("(%d,%d,%d,%d,%d,%d)\n", o->ObjectPoints[i].x, o->ObjectPoints[i].y, o->ObjectPoints[i].z, o->ObjectPoints[i].r, o->ObjectPoints[i].g, o->ObjectPoints[i].b);
 	}
-
-	if (buffer)
-	{
-		buf = strtok(buffer, delimit);
-		while (buf!=NULL) {
-			printf("%s\n", buf);
-			buf = strtok(buffer, delimit);
-		}
+	for (int i = 0;i < o->NumPolysObj;i++) {
+		printf("(%d,%d,%d,%d)\n", o->ObjectPolys[i].Vertices[0], o->ObjectPolys[i].Vertices[1], o->ObjectPolys[i].Vertices[2], o->ObjectPolys[i].Vertices[3]);
 	}
 }
 
-void DrawVJS(Object o,BYTE*screen) {
+void loadVJS(FILE * f, obj o) {
+	
+	if (f) {
+		int stage = 0;
+
+		int pt = 0, polys = 0;
+
+		char line[256];
+		char line_dup[256];
+		char *tok;
+		while (fgets(line, sizeof(line), f)) {
+			strcpy(line_dup, line);
+			if (line[0]=='/' && line[1]=='/') {
+				stage++;
+			}
+			else if (line[0] == ' ' && line[1] == ' ') {
+
+			}
+			else {
+				if (stage == 1) {
+					tok = strtok(line_dup,",\n");
+					//printf("%s\n",tok);
+					if(tok) o->NumPtsObj = atoi(tok);
+					tok = strtok(NULL,",\n");
+					//printf("%s\n", tok);
+					if(tok) o->NumPolysObj = atoi(tok);
+					//printf("%d,%d", o.NumPtsObj, o.NumPolysObj);
+				}
+				if (stage == 2) {
+					if (pt < o->NumPtsObj){
+						o->ObjectPoints[pt] = {0.0f,0.0f,0.0f,0,0,0};
+						
+						tok = strtok(line_dup, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].x = atoi(tok);
+							//printf("%d ", o.ObjectPoints[pt].x);
+						}
+						tok = strtok(NULL, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].y = atoi(tok);
+							//printf("%d ", o.ObjectPoints[pt].y);
+						}
+						tok = strtok(NULL, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].z = atoi(tok);
+							//printf("%d\n", o.ObjectPoints[pt].z);
+						}
+						tok = strtok(NULL, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].r = atoi(tok);
+							//printf("%d ", o.ObjectPoints[pt].r);
+						}
+						tok = strtok(NULL, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].g = atoi(tok);
+							//printf("%d ", o.ObjectPoints[pt].g);
+						}
+						tok = strtok(NULL, " \n");
+						if (tok) {
+							o->ObjectPoints[pt].b = atoi(tok);
+							//printf("%d\n", o.ObjectPoints[pt].b);
+						}
+						
+						pt++;
+					}
+				}
+				if (stage == 3) {
+					int sides=0;
+					tok = strtok(line_dup, " \n");
+					if (tok) {
+						sides = atoi(tok);
+					}
+					tok = strtok(NULL, " \n");
+					for (int i = 0;i < sides;i++) {
+						if (tok) {
+							o->ObjectPolys[polys].Vertices[i] = atoi(tok);
+							//printf("%i ",atoi(tok));
+						}
+						tok = strtok(NULL, " \n");
+					}
+					polys++;
+					//printf("\n");
+				}
+			}
+		}
+	}
+	else return;
+}
+
+void DrawVJS(obj o,BYTE*screen,int view) {
 
 	vec_t ij;
 
-	for (int i = 0; i < o.NumPolysObj; i++) {
+	for (int i = 0; i < o->NumPolysObj; i++) {
 		
-		Polygon_t * obj = &o.ObjectPolys[i];
+		Polygon_t * obj = &o->ObjectPolys[i];
 		
 		poly p = poly_new();
 
 		for (int j = 0; j < NumSidesPoly; j++) {
-			xyztoij(o.ObjectPoints[obj->Vertices[j]].x, o.ObjectPoints[obj->Vertices[j]].y, o.ObjectPoints[obj->Vertices[j]].z, &ij);
+			xyztoij(o->ObjectPoints[obj->Vertices[j]].x, o->ObjectPoints[obj->Vertices[j]].y, o->ObjectPoints[obj->Vertices[j]].z, &ij);
 			poly_append(p,&ij);
 		}
-		
+
 		for (int i = 0; i < p->len; i++) {
-			printf("(%f,%f),",p->v[i].x,p->v[i].y);
-			if (i < p->len-1) drawLine(p->v[i].x, p->v[i].y, p->v[i + 1].x, p->v[i + 1].y, 255, 0, 0,screen);
-			else drawLine(p->v[i].x, p->v[i].y, p->v[0].x, p->v[0].y, 255, 0, 0, screen);
+			printf("(%f,%f),", p->v[i].x, p->v[i].y);
+			
+			//if (i < p->len - 1) drawLine(p->v[i].x, p->v[i].y, p->v[i + 1].x, p->v[i + 1].y, 255, 0, 0, screen, view);
+			//else drawLine(p->v[i].x, p->v[i].y, p->v[0].x, p->v[0].y, 255, 0, 0, screen,view);
 		}
+
 		printf("\n");
 		poly_remove_duplicates(p);
-		IdentifyConcave(p, 255, 255, 255, screen);
-
-		//poly_free(p);
+		IdentifyConcave(p, 255, 255, 255, screen, view);
 	}
-
-
-	int i, j;
-
-
 }
 
-void testDrawVJS(BYTE*screen) {
+void ScalePoly(obj o, double transform){
+}
+
+void testDrawVJS(BYTE*screen,int view) {
 	Object o;
 	o.NumPolysObj = 6;
 	o.NumPtsObj = 8;
@@ -801,40 +872,43 @@ void testDrawVJS(BYTE*screen) {
 	o.ObjectPolys[4] = {{0,1,6,7}};
 	o.ObjectPolys[5] = {{4,5,6,7}};
 	o.ObjectPoints[0] = {100,100,100,255,0,128};
-	o.ObjectPoints[1] = {100,100,500,128,0,0};
-	o.ObjectPoints[2] = {500,100,500,255,255,255};
-	o.ObjectPoints[3] = {500,100,100,0,0,255};
-	o.ObjectPoints[4] = {500,500,100,255,255,0};
-	o.ObjectPoints[5] = {500,500,500,128,128,0};
-	o.ObjectPoints[6] = {100,500,500,255,0,128};
-	o.ObjectPoints[7] = {100,500,100,0,255,255};
-	DrawVJS(o, screen);
+	o.ObjectPoints[1] = {100,100,200,128,0,0};
+	o.ObjectPoints[2] = {200,100,200,255,255,255};
+	o.ObjectPoints[3] = {200,100,100,0,0,255};
+	o.ObjectPoints[4] = {200,200,100,255,255,0};
+	o.ObjectPoints[5] = {200,200,200,128,128,0};
+	o.ObjectPoints[6] = {100,200,200,255,0,128};
+	o.ObjectPoints[7] = {100,200,100,0,255,255};
+	DrawVJS(&o, screen, view);
 }
 
 void BuildFrame(BYTE *pFrame, int view)
 {
 	BYTE*	screen = (BYTE*)pFrame;		// use copy of screen pointer for safety
 	
-	//char fname[FILENAME_MAX] = "sample1.vjs";
+	char fname[FILENAME_MAX] = "sample1.vjs";
 	
 	//char dir[FILENAME_MAX];
 	//GetCurrentDir(dir,FILENAME_MAX);
 
-	//FILE * f = fopen(fname,"r");
-	//
-	//Object o;
-	//if (f) {
-	//	printf("File Found!\n");
-	//	loadVJS(f, o);
-	//	DrawVJS(o, screen);
-	//	fclose(f);
-	//}
-	//else {
-	//	//printf("Cannot open '%s'!\n, Directory: %s\n",fname,dir);
-	//	perror("Error: ");
-	//	//return -1;
-	//	return;
-	//}
-	testDrawVJS(screen);
+	FILE * f = fopen(fname,"r");
+	
+	Object o;
+
+	if (f) {
+		//printf("File Found!\n");
+		loadVJS(f,&o);
+		printObject(&o);
+		//DrawVJS(&o, screen);
+		fclose(f);
+	}
+	else {
+		//printf("Cannot open '%s'!\n, Directory: %s\n",fname,dir);
+		perror("Error: ");
+		//return -1;
+		return;
+	}
+	
+	testDrawVJS(screen,view);
 	printf("\n");
 }

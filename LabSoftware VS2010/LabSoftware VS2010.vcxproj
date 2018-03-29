@@ -13,12 +13,10 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="queue.cpp" />
-    <ClCompile Include="triangle.cpp" />
     <ClCompile Include="vector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="queue.h" />
-    <ClInclude Include="triangle.h" />
     <ClInclude Include="vector.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -32,7 +30,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>

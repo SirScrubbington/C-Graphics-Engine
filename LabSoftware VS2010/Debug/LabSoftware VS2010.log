@@ -1,9 +1,29 @@
 ﻿  main.cpp
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(641): warning C4101: 'res': unreferenced local variable
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(752): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(439): note: see declaration of 'strtok'
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(755): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.16299.0\ucrt\string.h(439): note: see declaration of 'strtok'
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(788): warning C4101: 'j': unreferenced local variable
-h:\my documents\3802ict\3801ict-ge-master\3801ict-ge-master\labsoftware vs2010\main.cpp(788): warning C4101: 'i': unreferenced local variable
-  LabSoftware VS2010.vcxproj -> H:\My Documents\3802ICT\3801ICT-GE-master\3801ICT-GE-master\Debug\LabSoftware VS2010.exe
+f:\graphics\labsoftware vs2010\main.cpp(642): warning C4101: 'res' : unreferenced local variable
+f:\graphics\labsoftware vs2010\main.cpp(755): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(112) : see declaration of 'strcpy'
+f:\graphics\labsoftware vs2010\main.cpp(764): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(767): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(776): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(781): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(786): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(791): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(796): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(801): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(812): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(816): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(822): warning C4996: 'strtok': This function or variable may be unsafe. Consider using strtok_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\string.h(204) : see declaration of 'strtok'
+f:\graphics\labsoftware vs2010\main.cpp(893): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+          c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdio.h(211) : see declaration of 'fopen'
+  LabSoftware VS2010.vcxproj -> F:\graphics\Debug\LabSoftware VS2010.exe
