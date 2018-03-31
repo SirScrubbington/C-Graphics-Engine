@@ -7,10 +7,11 @@
 #include "vector.h"
 #include "queue.h"
 
-//#include "liangbarsky.h"
-//#include "sutherlandhodgeman.h"
-
 #define M_PI acos(-1)
+
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #ifdef _WIN32
 	#include "libs/glut.h"
@@ -87,6 +88,9 @@ typedef struct _Object { ObjectAttribs ObjProps; int NumPtsObj, NumPolysObj; Pol
 //====== Global Variables ==========
 BYTE	pFrameL[FRAME_WIDE * FRAME_HIGH * 3];
 BYTE	pFrameR[FRAME_WIDE * FRAME_HIGH * 3];
+
+int	ZBuffer[FRAME_WIDE * FRAME_HIGH];
+
 int		shade = 0;
 POINT2D	xypos = {0,0};
 int		stereo = 0;
@@ -119,7 +123,6 @@ void OnKeypress(unsigned char key, int x, int y);
 
 int main(int argc, char** argv)
 {
-
 	// Assign Boundary Polygon
 	poly_append(bound, &bound_p1);
 	poly_append(bound, &bound_p2);
@@ -132,16 +135,6 @@ int main(int argc, char** argv)
 	glutInitWindowSize(FRAME_WIDE, FRAME_HIGH);
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow(argv[0]);
-
-/*
-#ifdef WIN32
-	//- eliminate flashing --
-	typedef void (APIENTRY * PFNWGLEXTSWAPCONTROLPROC) (int i);
-	PFNWGLEXTSWAPCONTROLPROC wglSwapControl = NULL;
-	wglSwapControl = (PFNWGLEXTSWAPCONTROLPROC) wglGetProcAddress("wglSwapIntervalEXT");
-	if (wglSwapControl != NULL) wglSwapControl(1); 
-#endif
-*/
 
 	//--- set openGL state --
 	glClearColor (0.0, 0.0, 0.0, 0.0);
@@ -159,7 +152,6 @@ int main(int argc, char** argv)
 	glutMainLoop();
 	return 0;
 }
-
 
 ////////////////////////////////////////////////////////
 // Event Handers
@@ -213,7 +205,6 @@ void OnKeypress(unsigned char key, int x, int y)
 	}
 	PlaySoundEffect("Whoosh.wav"); 
 }
-
 
 ////////////////////////////////////////////////////////
 // Utility Functions
@@ -270,6 +261,14 @@ void	PlaySoundEffect(char * filename)
 // Drawing Function
 ////////////////////////////////////////////////////////
 
+int checkZBuf(int x, int y, int z, int view) {
+	if (ZBuffer[x + view + (y*FRAME_WIDE)] < z) {
+		ZBuffer[x + view + (y*FRAME_WIDE)] = z;
+		return 1;
+	}
+	else return 0;
+}
+
 // lazy collision detection
 void setPixel(int x,int y, unsigned char r, unsigned char g, unsigned char b, BYTE* screen, int view){
 	int channels = 3;
@@ -279,7 +278,6 @@ void setPixel(int x,int y, unsigned char r, unsigned char g, unsigned char b, BY
 		screen[channels*((x + view + (y * FRAME_WIDE))) + 1] = g;
 		screen[channels*((x + view + (y * FRAME_WIDE))) + 2] = b;
 	}
-	
 }
 
 void drawLine(double x1, double y1, double x2, double y2, unsigned char r, unsigned char g, unsigned char b,BYTE* screen, int view) {
@@ -370,54 +368,58 @@ void fill_triangle_sort(vec A, vec B, vec C, unsigned char rc, unsigned char gc,
 		c = B;
 	}
 
-	printf("%f,%f,%f\n",a->y,b->y,c->y);
+	//printf("%f,%f,%f\n",a->y,b->y,c->y);
 
 	fillTriangle(a,b,c, rc, gc, bc, screen, view);
 }
 
 void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen, int view) {
-	// sort triangle
+
+	printf("%f,%f,%f",A->y,B->y,C->y);
 
 	double dx1, dx2, dx3;
 	double dr, dg, db;
 	double dr1, dr2, dr3, dg1, dg2, dg3, db1, db2, db3;
 
 	if (B->y - A->y > 0) {
-		dx1 = (B->x - A->x) / (B->y - A->y);
+		dx1 = (B->x - A->x)   / (B->y - A->y);
 		dr1 = (cB->r - cA->r) / (B->y - A->y);
 		dg1 = (cB->g - cA->g) / (B->y - A->y);
 		db1 = (cB->b - cA->b) / (B->y - A->y);
-	}
-	else dx1=dr1=dg1=db1= 0;
+	}else dx1=dr1=dg1=db1= 0;
 	
 	if (C->y - A->y > 0) {
-		dx2 = (C->x - A->x) / (C->y - A->y);
+		dx2 = (C->x - A->x)   / (C->y - A->y);
 		dr2 = (cC->r - cA->r) / (C->y - A->y);
 		dg2 = (cC->g - cA->g) / (C->y - A->y);
 		db2 = (cC->b - cA->b) / (C->y - A->y);
-	}
-	else dx2=dr2=dg2=db2 = 0;
+	}else dx2=dr2=dg2=db2 = 0;
 	
 	if (C->y - B->y > 0) {
-		dx3 = (C->x - B->x) / (C->y - B->y);
+		dx3 = (C->x - B->x)	  / (C->y - B->y);
 		dr3 = (cC->r - cB->r) / (C->y - B->y);
 		dg3 = (cC->g - cB->g) / (C->y - B->y);
 		db3 = (cC->b - cB->b) / (C->y - B->y);
-	} 
-	else dx3=dr3=dg3=db3 = 0;
+	} else dx3=dr3=dg3=db3 = 0;
 	
-	vec_t S = { A->x,A->y }, E = { A->x,A->y };
-	colour_t cS = {cA->r,cA->g,cA->b}, cE = { cA->r,cA->g,cA->b };
+	vec_t S = {A->x,A->y}, 
+		  E = {A->x,A->y};
+	
+	colour_t cS = {cA->r,cA->g,cA->b}, 
+		     cE = {cA->r,cA->g,cA->b};
 
 	if (dx1 > dx2) {
+		printf("dx1 > dx2\n");
 		for (; S.y <= B->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
 				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.b) / (E.x - S.x);
-				db = (cE.b - cS.g) / (E.x - S.x);
+				dg = (cE.g - cS.g) / (E.x - S.x);
+				db = (cE.b - cS.b) / (E.x - S.x);
 			}else dr = dg = db = 0;
+			
 			vec_t P = {S.x,S.y};
 			colour_t cP = {cS.r,cS.g,cS.b};
+			
 			for (; P.x < E.x; P.x++) {
 				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
@@ -425,20 +427,23 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 			S.x += dx2; cS.r += dr2; cS.g += dg2; cS.b += db2;
 			E.x += dx1; cE.r += dr1; cE.g += dg1; cE.b += db1;
 		}
+		
 		E.x = B->x;
 		E.y = B->y;
 		cE.r = cB->r;
 		cE.g = cB->g;
 		cE.b = cB->b;
+		
 		for (; S.y <= C->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
 				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.b) / (E.x - S.x);
-				db = (cE.b - cS.g) / (E.x - S.x);
-			}
-			else dr = dg = db = 0;
+				dg = (cE.g - cS.g) / (E.x - S.x);
+				db = (cE.b - cS.b) / (E.x - S.x);
+			}else dr = dg = db = 0;
+			
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
+			
 			for (; P.x < E.x; P.x++) {
 				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
@@ -448,40 +453,47 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 		}
 	}
 	else {
+		printf("dx1 < dx2\n");
 		for (; S.y <= B->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
 				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.b) / (E.x - S.x);
-				db = (cE.b - cS.g) / (E.x - S.x);
+				dg = (cE.g - cS.g) / (E.x - S.x);
+				db = (cE.b - cS.b) / (E.x - S.x);
 			}
 			else dr = dg = db = 0;
+			
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
+			
 			for (; P.x < E.x; P.x++) {
 				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
+			
 			S.x += dx1; cS.r += dr1; cS.g += dg1; cS.b += db1;
 			E.x += dx2; cE.r += dr2; cE.g += dg2; cE.b += db2;
 		}
-		E.x = B->x;
-		E.y = B->y;
-		cE.r = cB->r;
-		cE.g = cB->g;
-		cE.b = cB->b;
+		S.x = B->x;
+		S.y = B->y;
+		cS.r = cB->r;
+		cS.g = cB->g;
+		cS.b = cB->b;
 		for (; S.y <= C->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
 				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.b) / (E.x - S.x);
-				db = (cE.b - cS.g) / (E.x - S.x);
+				dg = (cE.g - cS.g) / (E.x - S.x);
+				db = (cE.b - cS.b) / (E.x - S.x);
 			}
 			else dr = dg = db = 0;
+			
 			vec_t P = { S.x,S.y };
 			colour_t cP = { cS.r,cS.g,cS.b };
+			
 			for (; P.x < E.x; P.x++) {
 				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
 				cP.r += dr; cP.g += dg; cP.b += db;
 			}
+			
 			S.x += dx3; cS.r += dr3; cS.g += dg3; cS.b += db3;
 			E.x += dx2; cE.r += dr2; cE.g += dg2; cE.b += db2;
 		}
@@ -513,11 +525,10 @@ void FillTriangleSortGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC
 		cc = cB;
 	}
 
-	printf("%f,%f,%f\n", a->y, b->y, c->y);
+	//printf("%f,%f,%f\n", a->y, b->y, c->y);
 
 	fillTriangleGourad(a, b, c, ca, cb, cc, screen, view);
 }
-
 
 // DrawPoly(): Void
 // Accepts an array 'points' of size 'n' and draws the resulting polygon using triangle decomposition.
@@ -639,7 +650,6 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 			// grab vertex (v1) where angle is found
 			vec v1 = &p->v[convex], v2;
 			int v1_i = convex, v2_i;
-			vec_t res;
 			// pick other vertex (v2) which does not intersect with other line (line_sect)
 			for (int j = 0; j < p->len; j++) {
 				if (j == convex || j == convex - 1 || j == convex + 1)continue;
@@ -664,28 +674,15 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 						}
 					}
 					else {
-						//printf("Checking for intersection between (%f,%f),(%f,%f) and (%f,%f),(%f,%f)\n", v1->x, v1->y, v2->x, v2->y, p->v[k].x, p->v[k].y, p->v[k + 1].x, p->v[k + 1].y);
 						if (line_sect_ignore_edge(v1, v2, &p->v[k], &p->v[k + 1])) {
 							valid = 0;
-							//printf("Intersect found!\n");
-							//drawLine(v1->x, v1->y, v2->x, v2->y, 255, 255, 0, screen);
-							//drawLine(p->v[k].x, p->v[k].y, p->v[k + 1].x, p->v[k + 1].y, 0, 255, 255, screen);
 							break;
 						}
-						//printf("No intersect at %i\n", k);
 					}
 				}
 				if (valid) {
-
-					//printf("Valid Poly Split at %i\n", convex, j);
-
-					poly p1 = poly_new(), p2 = poly_new();
-
-					// generate the polygons
-
-					// poly 1			
+					poly p1 = poly_new(), p2 = poly_new();		
 					int i = v1_i;
-					//for (int i = v1_i; i != v2_i; i++) {
 					while (i != v2_i) {
 						if (i >= p->len)i = 0;
 						if (i == v2_i) break;
@@ -695,7 +692,6 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 					poly_append(p1, v2);
 
 					i = v2_i;
-					//for (int i = v2_i; i != v1_i; i++) {
 					while (i != v1_i) {
 						if (i >= p->len)i = 0;
 						if (i == v1_i)break;
@@ -741,6 +737,43 @@ void printObject(obj o) {
 	}
 }
 
+void find_centre_3d(obj o) {
+	int cx, cy, cz;
+	for (int i = 0; i < o->NumPtsObj; i++) {
+		cx += o->ObjectPoints[i].x;
+		cy += o->ObjectPoints[i].y;
+		cz += o->ObjectPoints[i].z;
+	}
+	cx /= o->NumPtsObj;
+	cy /= o->NumPtsObj;
+	cz /= o->NumPtsObj;
+	o->ObjProps.Center = {cx,cy,cz,0,0,0};
+}
+
+void translate_obj(obj o, int dx, int dy, int dz) {
+	for (int i = 0; i < o->NumPtsObj; i++) {
+		o->ObjectPoints[i].x += dx;
+		o->ObjectPoints[i].y += dy;
+		o->ObjectPoints[i].z += dz;
+	}
+}
+
+void scale_obj(obj o, double xscale, double yscale, double zscale) {
+	translate_obj(o, -o->ObjProps.Center.x, -o->ObjProps.Center.y, -o->ObjProps.Center.z);
+
+	for (int i = 0; i < o->NumPtsObj; i++) {
+		o->ObjectPoints->x *= xscale;
+		o->ObjectPoints->y *= yscale;
+		o->ObjectPoints->z *= zscale;
+	}
+
+	translate_obj(o,o->ObjProps.Center.x,o->ObjProps.Center.y,o->ObjProps.Center.z);
+}
+
+void rotate_obj(obj o, int dx, int dy, int dz) {
+
+}
+
 void loadVJS(FILE * f, obj o) {
 	
 	if (f) {
@@ -771,7 +804,7 @@ void loadVJS(FILE * f, obj o) {
 				}
 				if (stage == 2) {
 					if (pt < o->NumPtsObj){
-						o->ObjectPoints[pt] = {0.0f,0.0f,0.0f,0,0,0};
+						//o->ObjectPoints[pt] = {0.0f,0.0f,0.0f,0,0,0};
 						
 						tok = strtok(line_dup, " \n");
 						if (tok) {
@@ -826,6 +859,7 @@ void loadVJS(FILE * f, obj o) {
 				}
 			}
 		}
+		find_centre_3d(o);
 	}
 	else return;
 }
@@ -844,21 +878,9 @@ void DrawVJS(obj o,BYTE*screen,int view) {
 			xyztoij(o->ObjectPoints[obj->Vertices[j]].x, o->ObjectPoints[obj->Vertices[j]].y, o->ObjectPoints[obj->Vertices[j]].z, &ij);
 			poly_append(p,&ij);
 		}
-
-		for (int i = 0; i < p->len; i++) {
-			printf("(%f,%f),", p->v[i].x, p->v[i].y);
-			
-			//if (i < p->len - 1) drawLine(p->v[i].x, p->v[i].y, p->v[i + 1].x, p->v[i + 1].y, 255, 0, 0, screen, view);
-			//else drawLine(p->v[i].x, p->v[i].y, p->v[0].x, p->v[0].y, 255, 0, 0, screen,view);
-		}
-
-		printf("\n");
 		poly_remove_duplicates(p);
 		IdentifyConcave(p, 255, 255, 255, screen, view);
 	}
-}
-
-void ScalePoly(obj o, double transform){
 }
 
 void testDrawVJS(BYTE*screen,int view) {
@@ -887,28 +909,27 @@ void BuildFrame(BYTE *pFrame, int view)
 	BYTE*	screen = (BYTE*)pFrame;		// use copy of screen pointer for safety
 	
 	char fname[FILENAME_MAX] = "sample1.vjs";
-	
-	//char dir[FILENAME_MAX];
-	//GetCurrentDir(dir,FILENAME_MAX);
 
 	FILE * f = fopen(fname,"r");
 	
 	Object o;
 
 	if (f) {
-		//printf("File Found!\n");
 		loadVJS(f,&o);
-		printObject(&o);
-		//DrawVJS(&o, screen);
 		fclose(f);
 	}
 	else {
-		//printf("Cannot open '%s'!\n, Directory: %s\n",fname,dir);
 		perror("Error: ");
-		//return -1;
 		return;
 	}
 	
 	testDrawVJS(screen,view);
-	printf("\n");
+
+	vec_t v1 = {100,100}, v2 = {100,200}, v3 = {200,300};
+	drawLine(100, 100, 100, 200, 255, 255, 255, screen, view);
+	drawLine(100, 200, 200, 300, 255, 255, 255, screen, view);
+	drawLine(200, 300, 100, 100, 255, 255, 255, screen, view);
+	colour_t c1 = {255,0,0}, c2 = {0,255,0}, c3 = {0,0,255};
+
+	FillTriangleSortGourad(&v1,&v2,&v3,&c1,&c2,&c3,screen,view);
 }
