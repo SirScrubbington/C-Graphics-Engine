@@ -1,6 +1,6 @@
 #pragma once
 
-typedef struct { double x, y; }vec_t, *vec;
+typedef struct { double x, y; unsigned char r, g, b; }vec_t, *vec;
 
 typedef struct { int len, alloc; vec v; }poly_t, *poly;
 

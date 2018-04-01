@@ -50,7 +50,7 @@
 #define FRAME_HIGH	600
 #define COLOUR_MAX 255
 
-#define DRAW_DISTANCE_CONSTANT 800
+#define DRAW_DISTANCE_CONSTANT 500
 
 #define ROUND(x) ((int)(x+0.5))
 #define ABS(x) ((x)<0 ? -(x) : (x))
@@ -86,6 +86,13 @@ typedef struct _Object { ObjectAttribs ObjProps; int NumPtsObj, NumPolysObj; Pol
 
 
 //====== Global Variables ==========
+
+char file_opened = 0;
+
+int movespeed = 10;
+
+char fname[FILENAME_MAX] = "test.vjs";
+
 BYTE	pFrameL[FRAME_WIDE * FRAME_HIGH * 3];
 BYTE	pFrameR[FRAME_WIDE * FRAME_HIGH * 3];
 
@@ -105,6 +112,10 @@ vec_t bound_p2 = { 0.0f,FRAME_WIDE };
 vec_t bound_p3 = { FRAME_HIGH,FRAME_WIDE };
 vec_t bound_p4 = { FRAME_HIGH,0.0f};
 
+// 
+Object o_t;
+obj o = &o_t;
+
 //===== Forward Declarations ========
 void ClearScreen();
 void DrawFrame();
@@ -116,6 +127,24 @@ void OnDisplay(void);
 void reshape(int w, int h);
 void OnMouse(int button, int state, int x, int y);
 void OnKeypress(unsigned char key, int x, int y);
+void setPixel(int x, int y, unsigned char r, unsigned char g, unsigned char b, BYTE*frame, int view);
+void drawLine(double x1, double y1, double x2, double y2, unsigned char r, unsigned char g, unsigned char b, BYTE* screen, int view);
+int sameSide(int x1, int y1, int x2, int y2, int l1x, int l1y, int l2x, int l2y);
+int inside(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
+void fillTriangle(vec A, vec B, vec C,BYTE*screen, int view);
+void fillTriangleSort(vec A, vec B, vec C,BYTE*screen, int view);
+void IdentifyConcave(poly start,BYTE*screen, int view);
+vec xyztoij(int x, int y, int z, vec res);
+void printObject(obj o);
+void find_centre_3d(obj o);
+void translate_obj(obj o, int dx, int dy, int dz);
+void scale_obj(obj o, double xscale, double yscale, double zscale);
+void rotate_obj(obj o, int dx, int dy, int dz);
+void loadVJS(FILE * f, obj o);
+void DrawVJS(obj o, BYTE*screen, int view);
+void testDrawVJS(BYTE*screen, int view);
+void move_to_origin(obj o);
+
 
 ////////////////////////////////////////////////////////
 // Program Entry Poinr
@@ -195,15 +224,41 @@ void OnMouse(int button, int state, int x, int y)
 
 void OnKeypress(unsigned char key, int x, int y)
 {
-	switch (key) 
-	{ 
-	case ' ': xypos.x = xypos.y = 0; break;
-	case 's': stereo ^= 1, eyes = 10;break;
-	case ']': eyes++;	break;
-	case '[': eyes--;	break;
-	case 27 : exit(0);
+	if (key == 'o') {
+		FILE * f = fopen(fname, "r");
+		if (f) {
+			loadVJS(f, o);
+		fclose(f);
+		}
+		else {
+			perror("Error: ");
+		}
+		file_opened = 1;
 	}
-	PlaySoundEffect("Whoosh.wav"); 
+	else {
+		switch (key)
+		{
+		case ' ': xypos.x = xypos.y = 0; break;
+		case 'p': stereo ^= 1, eyes = 10; break;
+		case 'w': translate_obj(o,0,movespeed,0); break;
+		case 's': translate_obj(o,0,-movespeed,0); break;
+		case 'a': translate_obj(o,-movespeed,0,0); break;
+		case 'd': translate_obj(o,movespeed,0,0); break;
+		case 'q': translate_obj(o,0,0,-movespeed); break;
+		case 'e': translate_obj(o,0,0,movespeed); break;
+		case 'x': move_to_origin(o); break;
+		case 'r': scale_obj(o,1.1,1.1,1.1); break;
+		case 'f': scale_obj(o,0.9,0.9,0.9); break;
+		case '=': movespeed += 10; break;
+		case '-': movespeed -= 10; break;
+		case '\\': movespeed = 10; break;
+		case ']': eyes++;	break;
+		case '[': eyes--;	break;
+		case 27: exit(0);
+		}
+		//PlaySoundEffect("Whoosh.wav");
+	}
+	
 }
 
 ////////////////////////////////////////////////////////
@@ -321,59 +376,7 @@ int inside(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) {
 		&& sameSide(x1, y1, x4, y4, x2, y2, x3, y3);
 }
 
-void fillTriangle(vec A, vec B, vec C, unsigned char r, unsigned char g, unsigned char b, BYTE*screen, int view) {
-	// sort triangle
-
-	double dx1, dx2, dx3;
-
-	if (B->y - A->y > 0) dx1 = (B->x - A->x) / (B->y - A->y); else dx1 = 0;
-	if (C->y - A->y > 0) dx2 = (C->x - A->x) / (C->y - A->y); else dx2 = 0;
-	if (C->y - B->y > 0) dx3 = (C->x - B->x) / (C->y - B->y); else dx3 = 0;
-
-	vec_t S = {A->x,A->y}, E = {A->x,A->y};
-
-	if (dx1 > dx2) {
-		for (; S.y <= B->y; S.y++, E.y++, S.x += dx2, E.x += dx1) {
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
-		}
-		E.x = B->x;
-		E.y = B->y;
-		for (; S.y <= C->y; S.y++, E.y++, S.x += dx2, E.x += dx3) {
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
-		}
-	}
-	else {
-		for (; S.y <= B->y; S.y++, E.y++, S.x += dx1, E.x += dx2)
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
-		S.x = B->x;
-		S.y = B->y;
-		for (; S.y <= C->y; S.y++, E.y++, S.x += dx3, E.x += dx2)
-			drawLine(S.x, S.y, E.x, E.y, r, g, b, screen, view);
-	}
-	
-}
-
-void fill_triangle_sort(vec A, vec B, vec C, unsigned char rc, unsigned char gc, unsigned char bc, BYTE*screen, int view) {
-	vec a = A, b = B, c = C;
-	if (a->y > c->y) {
-		a = C;
-		c = A;
-	}
-	if (a->y > b->y) {
-		a = B;
-		b = A;
-	}
-	if (b->y > c->y) {
-		b = C;
-		c = B;
-	}
-
-	//printf("%f,%f,%f\n",a->y,b->y,c->y);
-
-	fillTriangle(a,b,c, rc, gc, bc, screen, view);
-}
-
-void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen, int view) {
+void fillTriangle(vec A, vec B, vec C, BYTE*screen, int view) {
 
 	printf("%f,%f,%f",A->y,B->y,C->y);
 
@@ -382,157 +385,139 @@ void fillTriangleGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BY
 	double dr1, dr2, dr3, dg1, dg2, dg3, db1, db2, db3;
 
 	if (B->y - A->y > 0) {
-		dx1 = (B->x - A->x)   / (B->y - A->y);
-		dr1 = (cB->r - cA->r) / (B->y - A->y);
-		dg1 = (cB->g - cA->g) / (B->y - A->y);
-		db1 = (cB->b - cA->b) / (B->y - A->y);
+		dx1 = (B->x - A->x) / (B->y - A->y);
+		dr1 = (B->r - A->r) / (B->y - A->y);
+		dg1 = (B->g - A->g) / (B->y - A->y);
+		db1 = (B->b - A->b) / (B->y - A->y);
 	}else dx1=dr1=dg1=db1= 0;
 	
 	if (C->y - A->y > 0) {
-		dx2 = (C->x - A->x)   / (C->y - A->y);
-		dr2 = (cC->r - cA->r) / (C->y - A->y);
-		dg2 = (cC->g - cA->g) / (C->y - A->y);
-		db2 = (cC->b - cA->b) / (C->y - A->y);
+		dx2 = (C->x - A->x) / (C->y - A->y);
+		dr2 = (C->r - A->r) / (C->y - A->y);
+		dg2 = (C->g - A->g) / (C->y - A->y);
+		db2 = (C->b - A->b) / (C->y - A->y);
 	}else dx2=dr2=dg2=db2 = 0;
 	
 	if (C->y - B->y > 0) {
-		dx3 = (C->x - B->x)	  / (C->y - B->y);
-		dr3 = (cC->r - cB->r) / (C->y - B->y);
-		dg3 = (cC->g - cB->g) / (C->y - B->y);
-		db3 = (cC->b - cB->b) / (C->y - B->y);
+		dx3 = (C->x - B->x)	/ (C->y - B->y);
+		dr3 = (C->r - B->r) / (C->y - B->y);
+		dg3 = (C->g - B->g) / (C->y - B->y);
+		db3 = (C->b - B->b) / (C->y - B->y);
 	} else dx3=dr3=dg3=db3 = 0;
 	
-	vec_t S = {A->x,A->y}, 
-		  E = {A->x,A->y};
-	
-	colour_t cS = {cA->r,cA->g,cA->b}, 
-		     cE = {cA->r,cA->g,cA->b};
+	vec_t S = {A->x,A->y,A->r,A->g,A->b}, 
+		  E = {A->x,A->y,A->r,A->g,A->b};
 
 	if (dx1 > dx2) {
 		printf("dx1 > dx2\n");
 		for (; S.y <= B->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
-				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.g) / (E.x - S.x);
-				db = (cE.b - cS.b) / (E.x - S.x);
+				dr = (E.r - S.r) / (E.x - S.x);
+				dg = (E.g - S.g) / (E.x - S.x);
+				db = (E.b - S.b) / (E.x - S.x);
 			}else dr = dg = db = 0;
 			
-			vec_t P = {S.x,S.y};
-			colour_t cP = {cS.r,cS.g,cS.b};
+			vec_t P = {S.x,S.y,S.r,S.g,S.b};
 			
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
-				cP.r += dr; cP.g += dg; cP.b += db;
+				setPixel(P.x, P.y, P.r, P.g, P.b, screen, view);
+				P.r += dr; P.g += dg; P.b += db;
 			}
-			S.x += dx2; cS.r += dr2; cS.g += dg2; cS.b += db2;
-			E.x += dx1; cE.r += dr1; cE.g += dg1; cE.b += db1;
+			S.x += dx2; S.r += dr2; S.g += dg2; S.b += db2;
+			E.x += dx1; E.r += dr1; E.g += dg1; E.b += db1;
 		}
 		
 		E.x = B->x;
 		E.y = B->y;
-		cE.r = cB->r;
-		cE.g = cB->g;
-		cE.b = cB->b;
+		E.r = B->r;
+		E.g = B->g;
+		E.b = B->b;
 		
 		for (; S.y <= C->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
-				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.g) / (E.x - S.x);
-				db = (cE.b - cS.b) / (E.x - S.x);
+				dr = (E.r - S.r) / (E.x - S.x);
+				dg = (E.g - S.g) / (E.x - S.x);
+				db = (E.b - S.b) / (E.x - S.x);
 			}else dr = dg = db = 0;
 			
-			vec_t P = { S.x,S.y };
-			colour_t cP = { cS.r,cS.g,cS.b };
+			vec_t P = { S.x,S.y,S.r,S.g,S.b };
 			
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
-				cP.r += dr; cP.g += dg; cP.b += db;
+				setPixel(P.x, P.y, P.r, P.g, P.b, screen, view);
+				P.r += dr; P.g += dg; P.b += db;
 			}
-			S.x += dx2; cS.r += dr2; cS.g += dg2; cS.b += db2;
-			E.x += dx3; cE.r += dr3; cE.g += dg3; cE.b += db3;
+			S.x += dx2; S.r += dr2; S.g += dg2; S.b += db2;
+			E.x += dx3; E.r += dr3; E.g += dg3; E.b += db3;
 		}
 	}
 	else {
 		printf("dx1 < dx2\n");
 		for (; S.y <= B->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
-				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.g) / (E.x - S.x);
-				db = (cE.b - cS.b) / (E.x - S.x);
-			}
-			else dr = dg = db = 0;
+				dr = (E.r - S.r) / (E.x - S.x);
+				dg = (E.g - S.g) / (E.x - S.x);
+				db = (E.b - S.b) / (E.x - S.x);
+			}else dr = dg = db = 0;
 			
-			vec_t P = { S.x,S.y };
-			colour_t cP = { cS.r,cS.g,cS.b };
+			vec_t P = { S.x,S.y,S.r,S.g,S.b };
 			
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
-				cP.r += dr; cP.g += dg; cP.b += db;
+				setPixel(P.x, P.y, P.r, P.g, P.b, screen, view);
+				P.r += dr; P.g += dg; P.b += db;
 			}
 			
-			S.x += dx1; cS.r += dr1; cS.g += dg1; cS.b += db1;
-			E.x += dx2; cE.r += dr2; cE.g += dg2; cE.b += db2;
+			S.x += dx1; S.r += dr1; S.g += dg1; S.b += db1;
+			E.x += dx2; E.r += dr2; E.g += dg2; E.b += db2;
 		}
 		S.x = B->x;
 		S.y = B->y;
-		cS.r = cB->r;
-		cS.g = cB->g;
-		cS.b = cB->b;
+		S.r = B->r;
+		S.g = B->g;
+		S.b = B->b;
 		for (; S.y <= C->y; S.y++, E.y++) {
 			if (E.x - S.x > 0) {
-				dr = (cE.r - cS.r) / (E.x - S.x);
-				dg = (cE.g - cS.g) / (E.x - S.x);
-				db = (cE.b - cS.b) / (E.x - S.x);
-			}
-			else dr = dg = db = 0;
+				dr = (E.r - S.r) / (E.x - S.x);
+				dg = (E.g - S.g) / (E.x - S.x);
+				db = (E.b - S.b) / (E.x - S.x);
+			}else dr = dg = db = 0;
 			
-			vec_t P = { S.x,S.y };
-			colour_t cP = { cS.r,cS.g,cS.b };
+			vec_t P = { S.x,S.y,S.r,S.g,S.b };
 			
 			for (; P.x < E.x; P.x++) {
-				setPixel(P.x, P.y, cP.r, cP.g, cP.b, screen, view);
-				cP.r += dr; cP.g += dg; cP.b += db;
+				setPixel(P.x, P.y, P.r, P.g, P.b, screen, view);
+				P.r += dr; P.g += dg; P.b += db;
 			}
 			
-			S.x += dx3; cS.r += dr3; cS.g += dg3; cS.b += db3;
-			E.x += dx2; cE.r += dr2; cE.g += dg2; cE.b += db2;
+			S.x += dx3; S.r += dr3; S.g += dg3; S.b += db3;
+			E.x += dx2; E.r += dr2; E.g += dg2; E.b += db2;
 		}
 
 	}
 
 }
 
-void FillTriangleSortGourad(vec A, vec B, vec C, colour cA, colour cB, colour cC, BYTE*screen, int view) {
+void fillTriangleSort(vec A, vec B, vec C,BYTE*screen, int view) {
 	vec a = A, b = B, c = C;
-	colour ca=cA, cb=cB, cc=cC;
 	
 	if (a->y > c->y) {
 		a = C;
 		c = A;
-		ca = cC;
-		cc = cA;
 	}
 	if (a->y > b->y) {
 		a = B;
 		b = A;
-		ca = cB;
-		cb = cA;
 	}
 	if (b->y > c->y) {
 		b = C;
 		c = B;
-		cb = cC;
-		cc = cB;
 	}
 
-	//printf("%f,%f,%f\n", a->y, b->y, c->y);
-
-	fillTriangleGourad(a, b, c, ca, cb, cc, screen, view);
+	fillTriangle(a, b, c,screen, view);
 }
 
 // DrawPoly(): Void
 // Accepts an array 'points' of size 'n' and draws the resulting polygon using triangle decomposition.
-void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*screen, int view) {
+void DrawPoly(poly p,BYTE*screen, int view) {
 	//printf("%i\n", p->len);
 
 	while (p->len > 3) {
@@ -548,7 +533,11 @@ void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*sc
 						continue;
 					}
 					else {
-						fill_triangle_sort(&p->v[lp + off], &p->v[cp + off], &p->v[rp + off], r, g, b, screen, view);
+						//fillTriangleSort(&p->v[lp + off], &p->v[cp + off], &p->v[rp + off],screen,view);
+						printf("Drawing Triangle at (%f,%f),(%f,%f),(%f,%f)\n", p->v[lp + off].x, p->v[lp + off].y, p->v[cp + off].x, p->v[cp + off].y, p->v[rp + off].x, p->v[rp + off].y);
+						drawLine(p->v[lp + off].x, p->v[lp + off].y, p->v[cp + off].x, p->v[cp + off].y, 0, 255, 255, screen, view);
+						drawLine(p->v[cp + off].x, p->v[cp + off].y, p->v[rp + off].x, p->v[rp + off].y, 255, 0, 255, screen, view);
+						drawLine(p->v[rp + off].x, p->v[rp + off].y, p->v[lp + off].x, p->v[lp + off].y, 255, 255, 0, screen, view);
 						poly_remove(p, cp + off);
 						valid = 1;
 						break;
@@ -562,11 +551,16 @@ void DrawPoly(poly p, unsigned char r, unsigned char g, unsigned char b, BYTE*sc
 			if (valid) break;
 		}
 	}
-	fill_triangle_sort(&p->v[0], &p->v[1], &p->v[2], r, g, b, screen, view);
+	//fillTriangleSort(&p->v[0], &p->v[1], &p->v[2],screen, view);
+	printf("Drawing Triangle at (%f,%f),(%f,%f),(%f,%f)\n", p->v[0].x, p->v[0].y, p->v[1].x, p->v[1].y, p->v[2].x, p->v[2].y);
+	drawLine(p->v[0].x,p->v[0].y,p->v[1].x,p->v[1].y,0,255,255,screen, view);
+	drawLine(p->v[1].x,p->v[1].y,p->v[2].x,p->v[2].y,255,0,255,screen, view);
+	drawLine(p->v[2].x,p->v[2].y,p->v[0].x,p->v[0].y,255,255,0,screen, view);
+	printf("\n");
 	return;
 }
 
-void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char b, byte*screen, int view) {
+void IdentifyConcave(poly start,byte*screen, int view) {
 	
 	poly p_arr[1024];
 	Queue in,out;
@@ -628,7 +622,7 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 		//printf("pos: %i neg: %i len: %i\n", pos, neg, p->len);
 		if (pos == p->len || neg == p->len) {
 			//printf("Drawing Polygon!\n");
-			DrawPoly(p, r, g, b, screen, view);
+			DrawPoly(p,screen,view);
 		}
 
 		else {
@@ -720,8 +714,8 @@ void IdentifyConcave(poly start, unsigned char r, unsigned char g, unsigned char
 }
 
 vec xyztoij(int x, int y, int z,vec res) {
-	res->x = (DRAW_DISTANCE_CONSTANT*(x-FRAME_WIDE/2) / (z + DRAW_DISTANCE_CONSTANT));
-	res->y = (DRAW_DISTANCE_CONSTANT*(y-FRAME_HIGH/2) / (z + DRAW_DISTANCE_CONSTANT));
+	res->x = (DRAW_DISTANCE_CONSTANT*(x-(FRAME_WIDE)/2) / (z + DRAW_DISTANCE_CONSTANT));
+	res->y = (DRAW_DISTANCE_CONSTANT*(y-(FRAME_HIGH)/2) / (z + DRAW_DISTANCE_CONSTANT));
 	res->x += (FRAME_WIDE / 2);
 	res->y += (FRAME_HIGH / 2);
 	return res;
@@ -738,7 +732,7 @@ void printObject(obj o) {
 }
 
 void find_centre_3d(obj o) {
-	int cx, cy, cz;
+	int cx=0, cy=0, cz=0;
 	for (int i = 0; i < o->NumPtsObj; i++) {
 		cx += o->ObjectPoints[i].x;
 		cy += o->ObjectPoints[i].y;
@@ -756,15 +750,23 @@ void translate_obj(obj o, int dx, int dy, int dz) {
 		o->ObjectPoints[i].y += dy;
 		o->ObjectPoints[i].z += dz;
 	}
+	o->ObjProps.Center.x += dx;
+	o->ObjProps.Center.y += dy;
+	o->ObjProps.Center.z += dz;
+}
+
+void move_to_origin(obj o) {
+	translate_obj(o, +o->ObjProps.Center.x, +o->ObjProps.Center.y, +o->ObjProps.Center.z);
 }
 
 void scale_obj(obj o, double xscale, double yscale, double zscale) {
+	double tx, ty, tz;
 	translate_obj(o, -o->ObjProps.Center.x, -o->ObjProps.Center.y, -o->ObjProps.Center.z);
 
 	for (int i = 0; i < o->NumPtsObj; i++) {
-		o->ObjectPoints->x *= xscale;
-		o->ObjectPoints->y *= yscale;
-		o->ObjectPoints->z *= zscale;
+		o->ObjectPoints[i].x *= xscale;
+		o->ObjectPoints[i].y *= yscale;
+		o->ObjectPoints[i].z *= zscale;
 	}
 
 	translate_obj(o,o->ObjProps.Center.x,o->ObjProps.Center.y,o->ObjProps.Center.z);
@@ -876,10 +878,13 @@ void DrawVJS(obj o,BYTE*screen,int view) {
 
 		for (int j = 0; j < NumSidesPoly; j++) {
 			xyztoij(o->ObjectPoints[obj->Vertices[j]].x, o->ObjectPoints[obj->Vertices[j]].y, o->ObjectPoints[obj->Vertices[j]].z, &ij);
+			ij.r = o->ObjectPoints[obj->Vertices[j]].r;
+			ij.g = o->ObjectPoints[obj->Vertices[j]].g;
+			ij.b = o->ObjectPoints[obj->Vertices[j]].b;
 			poly_append(p,&ij);
 		}
 		poly_remove_duplicates(p);
-		IdentifyConcave(p, 255, 255, 255, screen, view);
+		IdentifyConcave(p,screen,view);
 	}
 }
 
@@ -908,28 +913,17 @@ void BuildFrame(BYTE *pFrame, int view)
 {
 	BYTE*	screen = (BYTE*)pFrame;		// use copy of screen pointer for safety
 	
-	char fname[FILENAME_MAX] = "sample1.vjs";
-
-	FILE * f = fopen(fname,"r");
-	
-	Object o;
-
-	if (f) {
-		loadVJS(f,&o);
-		fclose(f);
+	if (file_opened) {
+		DrawVJS(o, screen, view);
+		//printObject(o);
 	}
-	else {
-		perror("Error: ");
-		return;
-	}
+	//getchar();
 	
-	testDrawVJS(screen,view);
+	vec_t res;
+	xyztoij(o->ObjProps.Center.x, o->ObjProps.Center.y, o->ObjProps.Center.z,&res);
+	setPixel(res.x, res.y,255, 255, 255, screen, view);
+	
+	printf("Next Frame From Here \n");
+	
 
-	vec_t v1 = {100,100}, v2 = {100,200}, v3 = {200,300};
-	drawLine(100, 100, 100, 200, 255, 255, 255, screen, view);
-	drawLine(100, 200, 200, 300, 255, 255, 255, screen, view);
-	drawLine(200, 300, 100, 100, 255, 255, 255, screen, view);
-	colour_t c1 = {255,0,0}, c2 = {0,255,0}, c3 = {0,0,255};
-
-	FillTriangleSortGourad(&v1,&v2,&v3,&c1,&c2,&c3,screen,view);
 }
