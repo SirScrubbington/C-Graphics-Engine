@@ -120,6 +120,16 @@ poly poly_copy(poly p1) {
 	return p2;
 }
 
+vec rotate_point_around_point(vec p1, vec origin, double theta, vec res) {
+	double angle = theta * (acos(-1) / 180);
+	vec_t temp;
+	temp.x = (p1->x - origin->x)*cos(angle) - (p1->y - origin->y) * sin(angle) + origin->x;
+	temp.y = (p1->y - origin->y)*cos(angle) + (p1->y - origin->y) * sin(angle) + origin->y;
+	res->x = temp.x;
+	res->y = temp.y;
+	return res;
+}
+
 void poly_free(poly p)
 {
 	free(p->v);
@@ -159,5 +169,4 @@ void poly_remove(poly p, int v) {
 		p->v[i] = p->v[i + 1];
 	}
 	p->len--;
-
 }

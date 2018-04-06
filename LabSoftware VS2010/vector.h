@@ -1,6 +1,6 @@
 #pragma once
 
-typedef struct { double x, y; unsigned char r, g, b; }vec_t, *vec;
+typedef struct { double x, y; double r, g, b; }vec_t, *vec;
 
 typedef struct { int len, alloc; vec v; }poly_t, *poly;
 
@@ -28,6 +28,8 @@ int line_sect_ignore_edge(vec x0, vec x1, vec y0, vec y1);
 
 double inner_angle(vec a, vec b,vec c);
 
+vec rotate_point_around_point(vec p1, vec origin, double theta, vec res);
+
 poly poly_new();
 
 poly poly_copy(poly p1);
@@ -41,7 +43,3 @@ void poly_append(poly p, vec v);
 void poly_remove(poly p, int v);
 
 int poly_winding(poly p);
-
-void poly_edge_clip(poly sub, vec xv0, vec x1, int left, poly res);
-
-poly poly_clip(poly sub, poly clip);
