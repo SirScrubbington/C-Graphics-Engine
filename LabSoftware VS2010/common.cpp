@@ -1,6 +1,6 @@
 #include "common.h"
 
-void loadVJS(FILE * f, obj o) {
+void load_vjs(FILE * f, obj o) {
 
 	if (f) {
 		int stage = 0;
@@ -21,46 +21,36 @@ void loadVJS(FILE * f, obj o) {
 			else {
 				if (stage == 1) {
 					tok = strtok(line_dup, ",\n");
-					//printf("%s\n",tok);
 					if (tok) o->NumPtsObj = atoi(tok);
 					tok = strtok(NULL, ",\n");
-					//printf("%s\n", tok);
 					if (tok) o->NumPolysObj = atoi(tok);
-					//printf("%d,%d", o.NumPtsObj, o.NumPolysObj);
 				}
 				if (stage == 2) {
 					if (pt < o->NumPtsObj) {
-						//o->ObjectPoints[pt] = {0.0f,0.0f,0.0f,0,0,0};
 
 						tok = strtok(line_dup, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].x = atoi(tok);
-							//printf("%d ", o.ObjectPoints[pt].x);
 						}
 						tok = strtok(NULL, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].y = atoi(tok);
-							//printf("%d ", o.ObjectPoints[pt].y);
 						}
 						tok = strtok(NULL, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].z = atoi(tok);
-							//printf("%d\n", o.ObjectPoints[pt].z);
 						}
 						tok = strtok(NULL, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].r = atoi(tok);
-							//printf("%d ", o.ObjectPoints[pt].r);
 						}
 						tok = strtok(NULL, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].g = atoi(tok);
-							//printf("%d ", o.ObjectPoints[pt].g);
 						}
 						tok = strtok(NULL, " \n");
 						if (tok) {
 							o->ObjectPoints[pt].b = atoi(tok);
-							//printf("%d\n", o.ObjectPoints[pt].b);
 						}
 
 						pt++;
@@ -76,17 +66,20 @@ void loadVJS(FILE * f, obj o) {
 					for (int i = 0; i < sides; i++) {
 						if (tok) {
 							o->ObjectPolys[polys].Vertices[i] = atoi(tok);
-							//printf("%i ",atoi(tok));
 						}
 						tok = strtok(NULL, " \n");
 					}
 					polys++;
-					//printf("\n");
 				}
 			}
 		}
-		calculatenormals(o);
 		find_centre_3d(o);
+		o->ObjProps.Rotation.x = 0; //= { 0,0,0 };
+		o->ObjProps.Rotation.y = 0;
+		o->ObjProps.Rotation.z = 0;
+		o->ObjProps.Scale.x = 100; // { 1,1,1 };
+		o->ObjProps.Scale.y = 100;
+		o->ObjProps.Scale.z = 100;
 	}
 	else return;
 }
@@ -99,8 +92,9 @@ vec xyztoij(int x, int y, int z, vec res) {
 	return res;
 }
 
-void printObject(obj o) {
+void print_object(obj o) {
 	printf("%d,%d\n", o->NumPtsObj, o->NumPolysObj);
+	printf("%f,%f,%f,%f,%f,%f\n",o->ObjProps.Scale.x,o->ObjProps.Scale.y,o->ObjProps.Scale.z,o->ObjProps.Rotation.x,o->ObjProps.Rotation.y,o->ObjProps.Rotation.z);
 	for (int i = 0; i < o->NumPtsObj; i++) {
 		printf("(%d,%d,%d,%d,%d,%d)\n", o->ObjectPoints[i].x, o->ObjectPoints[i].y, o->ObjectPoints[i].z, o->ObjectPoints[i].r, o->ObjectPoints[i].g, o->ObjectPoints[i].b);
 	}
@@ -119,7 +113,12 @@ void find_centre_3d(obj o) {
 	cx /= o->NumPtsObj;
 	cy /= o->NumPtsObj;
 	cz /= o->NumPtsObj;
-	o->ObjProps.Center = { cx,cy,cz,0,0,0 };
+	o->ObjProps.Center.x = cx;
+	o->ObjProps.Center.y = cy;
+	o->ObjProps.Center.z = cz;
+	o->ObjProps.Center.r = 0;
+	o->ObjProps.Center.g = 0;
+	o->ObjProps.Center.b = 0;
 }
 
 void translate_obj(obj o, double dx, double dy, double dz) {
@@ -142,10 +141,6 @@ void move_to_origin(obj o) {
 	translate_obj(o, +o->ObjProps.Center.x, +o->ObjProps.Center.y, +o->ObjProps.Center.z);
 }
 
-void check_collision(obj o1, obj o2) {
-
-}
-
 void scale_obj(obj o, double xscale, double yscale, double zscale) {
 	double tx = o->ObjProps.Center.x, ty = o->ObjProps.Center.y, tz = o->ObjProps.Center.z;
 
@@ -158,61 +153,80 @@ void scale_obj(obj o, double xscale, double yscale, double zscale) {
 	}
 
 	translate_obj(o, tx, ty, tz);
+	o->ObjProps.Scale.x *= xscale;
+	o->ObjProps.Scale.y *= yscale;
+	o->ObjProps.Scale.z *= zscale;
 }
 
-void rotate_obj(obj o, double xrot, double yrot, double zrot) {
+void rotate_x(obj o, double theta) {
 	double tx = o->ObjProps.Center.x, ty = o->ObjProps.Center.y, tz = o->ObjProps.Center.z;
 	translate_obj(o, -tx, -ty, -tz);
-	for (int i = 0; i < o->NumPtsObj; i++) {
-		if (xrot != 0) {
-			o->ObjectPoints[i].y;// = o->ObjectPoints[i].y*cos(xrot) - o->ObjectPoints[i].z*sin(xrot);
-			o->ObjectPoints[i].z;// = o->ObjectPoints[i].y*sin(xrot) + o->ObjectPoints[i].z*cos(xrot);
-		}
-		if (yrot != 0) {
-			o->ObjectPoints[i].x;// = o->ObjectPoints[i].z*cos(yrot) - o->ObjectPoints[i].x*sin(yrot);
-			o->ObjectPoints[i].z;// = o->ObjectPoints[i].z*sin(yrot) + o->ObjectPoints[i].x*cos(yrot);
-		}
-		if (zrot != 0) {
-			o->ObjectPoints[i].x;// = o->ObjectPoints[i].x*cos(zrot) - o->ObjectPoints[i].y*sin(zrot);
-			o->ObjectPoints[i].y;// = o->ObjectPoints[i].x*sin(zrot) + o->ObjectPoints[i].y*cos(zrot);
-		}
+	double new_x, new_y, new_z;
+	for (int i = 0; i<o->NumPtsObj; i++) {
+		new_x = o->ObjectPoints[i].x;
+		new_y = (o->ObjectPoints[i].y * cos(theta)) - (o->ObjectPoints[i].z * sin(theta));
+		new_z = (o->ObjectPoints[i].y * sin(theta)) + (o->ObjectPoints[i].z * cos(theta));
+		o->ObjectPoints[i].x = (int)new_x;
+		o->ObjectPoints[i].y = (int)new_y;
+		o->ObjectPoints[i].z = (int)new_z;
 	}
 	translate_obj(o, tx, ty, tz);
+	o->ObjProps.Rotation.x += theta;
 }
 
-void SortObjByZ(obj o) {
-	int sorted = 0;
-	while (!sorted) {
-		sorted = 1;
-		for (int i = 0; i < o->NumPolysObj; i++) {
-
-		}
+void rotate_y(obj o, double theta) {
+	double tx = o->ObjProps.Center.x, ty = o->ObjProps.Center.y, tz = o->ObjProps.Center.z;
+	translate_obj(o, -tx, -ty, -tz);
+	double new_x, new_y, new_z;
+	for (int i = 0; i<o->NumPtsObj; i++) {
+		new_x = (o->ObjectPoints[i].z * cos(theta)) - (o->ObjectPoints[i].x * sin(theta));
+		new_y = o->ObjectPoints[i].y;
+		new_z = (o->ObjectPoints[i].z * sin(theta)) + (o->ObjectPoints[i].x * cos(theta));
+		o->ObjectPoints[i].x = (int)new_x;
+		o->ObjectPoints[i].y = (int)new_y;
+		o->ObjectPoints[i].z = (int)new_z;
 	}
+	translate_obj(o, tx, ty, tz);
+	o->ObjProps.Rotation.y += theta;
 }
 
-void calculatenormals(obj o) {
-	printf("Calculating normals...\n");
+void rotate_z(obj o, double theta) {
+	double tx = o->ObjProps.Center.x, ty = o->ObjProps.Center.y, tz = o->ObjProps.Center.z;
+	translate_obj(o, -tx, -ty, -tz);
+	double new_x, new_y, new_z;
+	for (int i = 0; i<o->NumPtsObj; i++) {
+		new_x = (o->ObjectPoints[i].x * cos(theta)) - (o->ObjectPoints[i].y * sin(theta));
+		new_y = (o->ObjectPoints[i].x * sin(theta)) + (o->ObjectPoints[i].y * cos(theta));
+		new_z = o->ObjectPoints[i].z;
+		o->ObjectPoints[i].x = new_x;
+		o->ObjectPoints[i].y = new_y;
+		o->ObjectPoints[i].z = new_z;
+	}
+	translate_obj(o, tx, ty, tz);
+	o->ObjProps.Rotation.z += theta;
+}
+
+// unused functions written for backface culling algorithm here to demonstrate some level of understanding of the algorithm
+
+void calculate_normals(obj o) {
 	for (int i = 0; i < o->NumPolysObj; i++) {
 		Point_3D_D t = { 0,0,0 };
 		for (int j = 0; j < NumSidesPoly; j++) {
-			printf("(%i,%i,%i) & (%i,%i,%i)\n", o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].x, o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].y, o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].z, o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].x, o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].y, o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].z);
 			t.x = t.x + ((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].y) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].y))*((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].z) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].z));
 			t.y = t.y + ((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].z) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].z))*((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].x) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].x));
 			t.z = t.z + ((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].x) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].x))*((double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[j]].y) - (double)(o->ObjectPoints[o->ObjectPolys[i].Vertices[(j + 1) % NumSidesPoly]].y));
-			printf("%f,%f,%f\n", t.x, t.y, t.z);
 		}
-		o->ObjectPolys[i].normals = { t.x,t.y,t.z };
+		o->ObjectPolys[i].normals.x = t.x;
+		o->ObjectPolys[i].normals.y = t.y;
+		o->ObjectPolys[i].normals.z = t.z;
 	}
-	//getchar();
 }
 
-void backfaceculling(obj o) {
+void backface_culling(obj o) {
 	Point_3D_D view = { FRAME_WIDE / 2,FRAME_HIGH / 2,0 };
 	double dp;
 	for (int i = 0; i < o->NumPolysObj; i++) {
-		//Point_3D_D 
 		dp = (view.x * o->ObjectPolys[i].normals.x) + (view.y * o->ObjectPolys[i].normals.y) + (view.z * o->ObjectPolys[i].normals.z);
-		printf("Normal: %f,%f,%f \nDot Product: %f\n", o->ObjectPolys[i].normals.x, o->ObjectPolys[i].normals.y, o->ObjectPolys[i].normals.z, dp);
 		if (dp >= 0) o->ObjectPolys[i].can_draw = 1;
 		else o->ObjectPolys[i].can_draw = 0;
 	}
