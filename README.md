@@ -1,2 +1,3 @@
-# 3801ICT-GE
-Simple Graphics Engine for 3801ICT
+# C-Graphics-Engine
+
+A simple 3D Object Viewer, which loads 3D shapes from .vjs files in the format of the same files contained in the 'vjs' directory in the archive. Launch the LabSoftware VS2010.exe to try it out, and refer to the user manual in the 'documentation' folder to find how to use the program.
